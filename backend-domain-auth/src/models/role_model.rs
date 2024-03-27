@@ -1,22 +1,27 @@
-use diesel::{AsChangeset, Identifiable, Insertable, Queryable, Selectable};
-use serde::{Deserialize, Serialize};
+use crate::api_error::ApiError;
+use serde::Serialize;
 
-#[derive(
-    Identifiable, Queryable, Selectable, PartialEq, Debug, Serialize, Deserialize, AsChangeset,
-)]
-#[diesel(table_name = crate::schema::roles)]
-#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
+#[derive(PartialEq, Debug, Serialize)]
 pub(crate) struct Role {
     pub(crate) id: i32,
-    pub(crate) role_name: String,
-    pub(crate) superior_role: Option<i32>,
+    pub(crate) role: String,
 }
 
-impl Role {}
-
-#[derive(Insertable, Serialize, Deserialize)]
-#[diesel(table_name = crate::schema::roles)]
-pub struct NewRole {
-    pub role_name: String,
-    pub(crate) superior_role: Option<i32>,
+impl Role {
+    /// checking if role a > role b
+    pub(crate) fn superior_to(
+        a: Role,
+        b: Role,
+    ) -> Result<bool, ApiError> {
+        let hierarchy = ["root", "super", "user", "visitor"];
+        match (
+            hierarchy.iter().position(|&r| r == b.role),
+            hierarchy.iter().position(|&r| r == a.role),
+        ) {
+            (Some(pos_a_in_hierarchy), Some(pos_b_in_hierarchy)) => {
+                Ok(pos_a_in_hierarchy < pos_b_in_hierarchy)
+            }
+            _ => Err(ApiError::Internal),
+        }
+    }
 }

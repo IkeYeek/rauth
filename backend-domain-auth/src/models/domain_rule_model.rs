@@ -3,8 +3,8 @@ use crate::models::group_model::Group;
 use crate::models::user_model::User;
 use diesel::ExpressionMethods;
 use diesel::{
-    insert_into, Insertable, QueryDsl, Queryable, RunQueryDsl, Selectable,
-    SelectableHelper, SqliteConnection,
+    insert_into, Insertable, QueryDsl, Queryable, RunQueryDsl, Selectable, SelectableHelper,
+    SqliteConnection,
 };
 use serde::{Deserialize, Serialize};
 

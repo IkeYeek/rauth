@@ -6,8 +6,8 @@ use crate::schema::*;
 use diesel::result::DatabaseErrorKind;
 use diesel::ExpressionMethods;
 use diesel::{
-    insert_into, Associations, Identifiable, Insertable, QueryDsl, Queryable,
-    RunQueryDsl, Selectable, SqliteConnection,
+    insert_into, Associations, Identifiable, Insertable, QueryDsl, Queryable, RunQueryDsl,
+    Selectable, SqliteConnection,
 };
 use serde::{Deserialize, Serialize};
 

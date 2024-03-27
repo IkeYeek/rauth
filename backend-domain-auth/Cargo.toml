@@ -14,3 +14,4 @@ dotenvy = "0.15"
 diesel = { version = "2.1", features = ["sqlite", "returning_clauses_for_sqlite_3_35"]}
 serde = { version = "1.0.197", features = ["derive"] }
 derive_more = "0.99.17"
+jsonwebtoken = { version = "9.3"}
