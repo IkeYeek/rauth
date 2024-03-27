@@ -2,11 +2,10 @@ use crate::api_error::ApiError;
 use crate::models::group_user_model::GroupUser;
 use crate::models::user_model::User;
 use crate::schema::*;
-use diesel::prelude::*;
 use diesel::result::{DatabaseErrorKind, Error as DieselError};
 use diesel::{
-    insert_into, AsChangeset, Identifiable, Insertable, QueryDsl, Queryable,
-    RunQueryDsl, Selectable, SelectableHelper, SqliteConnection,
+    insert_into, AsChangeset, Identifiable, Insertable, QueryDsl, Queryable, RunQueryDsl,
+    Selectable, SelectableHelper, SqliteConnection,
 };
 use diesel::{BelongingToDsl, ExpressionMethods, JoinOnDsl};
 use serde::{Deserialize, Serialize};

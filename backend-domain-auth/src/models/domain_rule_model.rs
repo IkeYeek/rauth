@@ -3,7 +3,7 @@ use crate::models::group_model::Group;
 use crate::models::user_model::User;
 use diesel::ExpressionMethods;
 use diesel::{
-    insert_into, Insertable, QueryDsl, QueryResult, Queryable, RunQueryDsl, Selectable,
+    insert_into, Insertable, QueryDsl, Queryable, RunQueryDsl, Selectable,
     SelectableHelper, SqliteConnection,
 };
 use serde::{Deserialize, Serialize};
@@ -46,7 +46,7 @@ impl DomainRule {
         Ok(crate::schema::domain_rules::dsl::domain_rules
             .select(DomainRule::as_select())
             .load(db)
-            .map_err(|e| ApiError::Internal)?)
+            .map_err(|_| ApiError::Internal)?)
     }
 
     pub(crate) fn delete(
@@ -73,7 +73,7 @@ impl DomainRule {
             .filter(crate::schema::domain_rules::dsl::domain.eq(domain))
             .select(DomainRule::as_select())
             .load(db)
-            .map_err(|err| ApiError::Internal)?)
+            .map_err(|_| ApiError::Internal)?)
     }
 
     pub(crate) fn for_group(

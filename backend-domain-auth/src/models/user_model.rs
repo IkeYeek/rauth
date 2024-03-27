@@ -3,15 +3,13 @@ use crate::models::group_model::Group;
 use crate::models::group_user_model::GroupUser;
 use crate::schema;
 use crate::schema::groups;
-use crate::schema::groups_users::dsl::groups_users;
 use crate::schema::users::dsl::users;
 use crate::schema::users::id;
-use diesel::associations::HasTable;
 use diesel::result::{DatabaseErrorKind, Error as DieselError};
 use diesel::ExpressionMethods;
 use diesel::{
-    insert_into, AsChangeset, BelongingToDsl, Identifiable, Insertable, JoinOnDsl, QueryDsl,
-    Queryable, RunQueryDsl, Selectable, SelectableHelper, SqliteConnection,
+    insert_into, AsChangeset, Identifiable, Insertable, JoinOnDsl, QueryDsl, Queryable,
+    RunQueryDsl, Selectable, SelectableHelper, SqliteConnection,
 };
 use serde::{Deserialize, Serialize};
 

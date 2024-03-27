@@ -23,6 +23,21 @@ diesel::table! {
 }
 
 diesel::table! {
+    roles (id) {
+        id -> Integer,
+        role_name -> Text,
+        superior_role -> Nullable<Integer>,
+    }
+}
+
+diesel::table! {
+    roles_users (role_id, user_id) {
+        role_id -> Integer,
+        user_id -> Integer,
+    }
+}
+
+diesel::table! {
     url_rules (id) {
         id -> Integer,
         url -> Text,
@@ -38,4 +53,15 @@ diesel::table! {
     }
 }
 
-diesel::allow_tables_to_appear_in_same_query!(domain_rules, groups, groups_users, url_rules, users,);
+diesel::joinable!(roles_users -> roles (role_id));
+diesel::joinable!(roles_users -> users (user_id));
+
+diesel::allow_tables_to_appear_in_same_query!(
+    domain_rules,
+    groups,
+    groups_users,
+    roles,
+    roles_users,
+    url_rules,
+    users,
+);

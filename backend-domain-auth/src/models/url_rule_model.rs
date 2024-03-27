@@ -3,8 +3,8 @@ use crate::models::group_model::Group;
 use crate::models::user_model::User;
 use diesel::ExpressionMethods;
 use diesel::{
-    insert_into, Insertable, QueryDsl, QueryResult, Queryable, RunQueryDsl, Selectable,
-    SelectableHelper, SqliteConnection,
+    insert_into, Insertable, QueryDsl, Queryable, RunQueryDsl, Selectable, SelectableHelper,
+    SqliteConnection,
 };
 use serde::{Deserialize, Serialize};
 
@@ -46,7 +46,7 @@ impl URLRule {
         Ok(crate::schema::url_rules::dsl::url_rules
             .select(URLRule::as_select())
             .load(db)
-            .map_err(|e| ApiError::Internal)?)
+            .map_err(|_| ApiError::Internal)?)
     }
 
     pub(crate) fn delete(db: &mut SqliteConnection, url_rule: &URLRule) -> Result<(), ApiError> {
@@ -67,7 +67,7 @@ impl URLRule {
             .filter(crate::schema::url_rules::dsl::url.eq(url))
             .select(URLRule::as_select())
             .load(db)
-            .map_err(|err| ApiError::Internal)?)
+            .map_err(|_| ApiError::Internal)?)
     }
 
     pub(crate) fn for_group(
@@ -78,7 +78,7 @@ impl URLRule {
             .filter(crate::schema::url_rules::dsl::group_id.eq(group.id))
             .select(URLRule::as_select())
             .load(db)
-            .map_err(|err| ApiError::Internal)?)
+            .map_err(|_| ApiError::Internal)?)
     }
 
     pub(crate) fn for_user(

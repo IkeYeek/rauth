@@ -21,6 +21,9 @@ pub(crate) enum ApiError {
     #[display(fmt = "Error with url rule.")]
     URLRule,
 
+    #[display(fmt = "Error with role.")]
+    Role,
+
     #[display(fmt = "Internal server error")]
     Internal,
 }
@@ -29,6 +32,7 @@ impl ResponseError for ApiError {
     fn status_code(&self) -> StatusCode {
         match *self {
             ApiError::GroupCreation => StatusCode::BAD_REQUEST,
+            ApiError::Role => StatusCode::BAD_REQUEST,
             ApiError::Group => StatusCode::BAD_REQUEST,
             ApiError::DomainRule => StatusCode::BAD_REQUEST,
             ApiError::URLRule => StatusCode::BAD_REQUEST,

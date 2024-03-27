@@ -1,16 +1,13 @@
 use crate::api_error::ApiError;
 use crate::models::group_model::{Group, NewGroup};
-use crate::models::group_user_model::{GroupUser, NewGroupUser};
+use crate::models::group_user_model::GroupUser;
 use crate::models::user_model::User;
 use crate::schema::groups::dsl::*;
-use crate::schema::groups_users::dsl::groups_users;
 use crate::schema::users::dsl::users;
 use crate::AppDatabaseState;
-use actix_web::{delete, get, patch, post, web, HttpResponse};
-use diesel::dsl::count;
+use actix_web::{delete, get, patch, post, web};
 use diesel::prelude::*;
-use diesel::result::{DatabaseErrorKind, Error as DieselError};
-use diesel::{insert_into, QueryDsl, RunQueryDsl, SelectableHelper};
+use diesel::{QueryDsl, RunQueryDsl, SelectableHelper};
 use serde::{Deserialize, Serialize};
 
 #[post("/")]
@@ -20,7 +17,7 @@ pub(crate) async fn create_group(
 ) -> Result<&'static str, ApiError> {
     match db.db.lock() {
         Ok(mut db) => {
-            let created_group = Group::create_group(&mut db, &new_group)?;
+            let _ = Group::create_group(&mut db, &new_group)?;
             Ok("created.")
         }
         Err(e) => {
