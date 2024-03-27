@@ -1,6 +1,11 @@
 use crate::api_error::ApiError;
-use crate::schema::*;
-use diesel::{Insertable, Queryable, Selectable, SqliteConnection};
+use crate::models::group_model::Group;
+use crate::models::user_model::User;
+use diesel::ExpressionMethods;
+use diesel::{
+    insert_into, Insertable, QueryDsl, QueryResult, Queryable, RunQueryDsl, Selectable,
+    SelectableHelper, SqliteConnection,
+};
 use serde::{Deserialize, Serialize};
 
 #[derive(Queryable, Selectable, PartialEq, Debug, Serialize, Deserialize)]
@@ -15,32 +20,93 @@ pub(crate) struct DomainRule {
 impl DomainRule {
     pub(crate) fn create(
         db: &mut SqliteConnection,
-        domain_rule: NewDomainRule,
+        domain_rule: &NewDomainRule,
     ) -> Result<DomainRule, ApiError> {
-        todo!()
+        match insert_into(crate::schema::domain_rules::dsl::domain_rules)
+            .values(domain_rule)
+            .get_result::<DomainRule>(db)
+        {
+            Ok(rule) => Ok(rule),
+            Err(diesel::result::Error::DatabaseError(e, _)) => match e {
+                diesel::result::DatabaseErrorKind::UniqueViolation
+                | diesel::result::DatabaseErrorKind::NotNullViolation => Err(ApiError::DomainRule),
+                _ => {
+                    eprintln!("{e:?}");
+                    Err(ApiError::Internal)
+                }
+            },
+            Err(e) => {
+                eprintln!("{e:?}");
+                Err(ApiError::Internal)
+            }
+        }
     }
 
     pub(crate) fn read_all(db: &mut SqliteConnection) -> Result<Vec<DomainRule>, ApiError> {
-        todo!()
+        Ok(crate::schema::domain_rules::dsl::domain_rules
+            .select(DomainRule::as_select())
+            .load(db)
+            .map_err(|e| ApiError::Internal)?)
     }
 
     pub(crate) fn delete(
         db: &mut SqliteConnection,
-        domain_rule: DomainRule,
+        domain_rule: &DomainRule,
     ) -> Result<(), ApiError> {
-        todo!()
+        match diesel::delete(
+            crate::schema::domain_rules::dsl::domain_rules
+                .filter(crate::schema::domain_rules::dsl::id.eq(domain_rule.id)),
+        )
+        .execute(db)
+        {
+            Ok(_) => Ok(()),
+            Err(diesel::result::Error::NotFound) => Err(ApiError::DomainRule),
+            _ => Err(ApiError::Internal),
+        }
     }
 
     pub(crate) fn for_domain(
         db: &mut SqliteConnection,
         domain: &str,
     ) -> Result<Vec<DomainRule>, ApiError> {
-        todo!()
+        Ok(crate::schema::domain_rules::dsl::domain_rules
+            .filter(crate::schema::domain_rules::dsl::domain.eq(domain))
+            .select(DomainRule::as_select())
+            .load(db)
+            .map_err(|err| ApiError::Internal)?)
+    }
+
+    pub(crate) fn for_group(
+        db: &mut SqliteConnection,
+        group: &Group,
+    ) -> Result<Vec<DomainRule>, ApiError> {
+        Ok(crate::schema::domain_rules::dsl::domain_rules
+            .filter(crate::schema::domain_rules::dsl::group_id.eq(group.id))
+            .select(DomainRule::as_select())
+            .load(db)
+            .map_err(|err| ApiError::Internal)?)
+    }
+
+    pub(crate) fn for_user(
+        db: &mut SqliteConnection,
+        user: &User,
+    ) -> Result<Vec<DomainRule>, ApiError> {
+        let mut rules = Vec::<DomainRule>::new();
+        for group in User::get_groups(db, user)? {
+            rules.append(
+                &mut crate::schema::domain_rules::dsl::domain_rules
+                    .filter(crate::schema::domain_rules::dsl::group_id.eq(group.id))
+                    .select(DomainRule::as_select())
+                    .load(db)
+                    .map_err(|_| ApiError::Internal)?,
+            );
+        }
+        Ok(rules)
     }
 }
 
 #[derive(Insertable, Serialize, Deserialize)]
-#[diesel(table_name = domain_rules)]
+#[diesel(table_name = crate::schema::domain_rules)]
 pub struct NewDomainRule<'a> {
     pub(crate) domain: &'a str,
     pub(crate) group_id: i32,
