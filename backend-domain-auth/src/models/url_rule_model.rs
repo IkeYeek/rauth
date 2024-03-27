@@ -49,15 +49,12 @@ impl URLRule {
             .map_err(|e| ApiError::Internal)?)
     }
 
-    pub(crate) fn delete(
-        db: &mut SqliteConnection,
-        url_rule: &URLRule,
-    ) -> Result<(), ApiError> {
+    pub(crate) fn delete(db: &mut SqliteConnection, url_rule: &URLRule) -> Result<(), ApiError> {
         match diesel::delete(
             crate::schema::url_rules::dsl::url_rules
                 .filter(crate::schema::url_rules::dsl::id.eq(url_rule.id)),
         )
-            .execute(db)
+        .execute(db)
         {
             Ok(_) => Ok(()),
             Err(diesel::result::Error::NotFound) => Err(ApiError::URLRule),
@@ -65,10 +62,7 @@ impl URLRule {
         }
     }
 
-    pub(crate) fn for_url(
-        db: &mut SqliteConnection,
-        url: &str,
-    ) -> Result<Vec<URLRule>, ApiError> {
+    pub(crate) fn for_url(db: &mut SqliteConnection, url: &str) -> Result<Vec<URLRule>, ApiError> {
         Ok(crate::schema::url_rules::dsl::url_rules
             .filter(crate::schema::url_rules::dsl::url.eq(url))
             .select(URLRule::as_select())

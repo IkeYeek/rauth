@@ -1,14 +1,14 @@
 use crate::api_error::ApiError;
-use crate::schema::users::dsl::users;
-use crate::schema::users::id;
+use crate::models::group_user_model::GroupUser;
+use crate::models::user_model::User;
 use crate::schema::*;
-use actix_web::web;
+use diesel::prelude::*;
 use diesel::result::{DatabaseErrorKind, Error as DieselError};
-use diesel::ExpressionMethods;
 use diesel::{
-    insert_into, AsChangeset, Identifiable, Insertable, QueryDsl, QueryResult, Queryable,
+    insert_into, AsChangeset, Identifiable, Insertable, QueryDsl, Queryable,
     RunQueryDsl, Selectable, SelectableHelper, SqliteConnection,
 };
+use diesel::{BelongingToDsl, ExpressionMethods, JoinOnDsl};
 use serde::{Deserialize, Serialize};
 
 #[derive(
@@ -67,12 +67,33 @@ impl Group {
         }
     }
 
+    pub(crate) fn users_from_group(
+        db: &mut SqliteConnection,
+        group: &Group,
+    ) -> Result<Vec<User>, ApiError> {
+        let groups =
+            GroupUser::belonging_to(group)
+                .inner_join(crate::schema::users::table.on(
+                    crate::schema::groups_users::dsl::user_id.eq(crate::schema::users::dsl::id),
+                ))
+                .select(User::as_select())
+                .load::<User>(db)
+                .map_err(|e| match e {
+                    diesel::result::Error::NotFound => ApiError::Group,
+                    _ => ApiError::Internal,
+                })?;
+        Ok(groups)
+    }
+
     pub(crate) fn delete_group(db: &mut SqliteConnection, group: &Group) -> Result<(), ApiError> {
+        Group::users_from_group(&mut *db, group)?
+            .iter()
+            .try_for_each(|user| GroupUser::remove_user_from_group(db, user, group))?;
+
         match diesel::delete(groups::dsl::groups.filter(groups::dsl::id.eq(group.id))).execute(db) {
             Ok(_) => Ok(()),
             Err(_) => Err(ApiError::Internal),
         }
-        //TODO remove users from grp
     }
 }
 
