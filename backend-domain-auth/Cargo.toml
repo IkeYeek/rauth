@@ -1,0 +1,16 @@
+[package]
+name = "backend-domain-auth"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[[bin]]
+name = "app"
+path = "src/main.rs"
+
+[dependencies]
+actix-web = "4.5"
+dotenvy = "0.15"
+diesel = { version = "2.1", features = ["sqlite", "returning_clauses_for_sqlite_3_35"]}
+serde = { version = "1.0.197", features = ["derive"] }
+derive_more = "0.99.17"
