@@ -26,6 +26,9 @@ pub(crate) enum ApiError {
 
     #[display(fmt = "Internal server error")]
     Internal,
+
+    #[display(fmt = "Couldn't validate jwt")]
+    JWT,
 }
 
 impl ResponseError for ApiError {
@@ -35,6 +38,7 @@ impl ResponseError for ApiError {
             ApiError::Role => StatusCode::BAD_REQUEST,
             ApiError::Group => StatusCode::BAD_REQUEST,
             ApiError::DomainRule => StatusCode::BAD_REQUEST,
+            ApiError::JWT => StatusCode::FORBIDDEN,
             ApiError::URLRule => StatusCode::BAD_REQUEST,
             ApiError::UserCreation => StatusCode::BAD_REQUEST,
             ApiError::User => StatusCode::BAD_REQUEST,

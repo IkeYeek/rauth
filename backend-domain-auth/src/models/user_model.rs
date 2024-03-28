@@ -1,10 +1,12 @@
 use crate::api_error::ApiError;
 use crate::models::group_model::Group;
 use crate::models::group_user_model::GroupUser;
+use crate::models::role_model::Role;
+use crate::models::role_user_model::RoleUser;
 use crate::schema;
 use crate::schema::groups;
 use crate::schema::users::dsl::users;
-use crate::schema::users::id;
+use crate::schema::users::{hash, id, login};
 use diesel::result::{DatabaseErrorKind, Error as DieselError};
 use diesel::ExpressionMethods;
 use diesel::{
@@ -26,9 +28,19 @@ pub(crate) struct User {
 
 impl User {
     pub(crate) fn create(db: &mut SqliteConnection, u: &NewUser) -> Result<User, ApiError> {
-        match insert_into(users).values(&*u).get_results::<User>(db) {
+        match (insert_into(users).values(&*u).get_results::<User>(db)) {
             Ok(mut res) => match res.pop() {
-                Some(created_user) => Ok(created_user),
+                Some(created_user) => {
+                    RoleUser::add_role_to_user(
+                        db,
+                        &created_user,
+                        &Role {
+                            id: 0,
+                            role: "root".to_string(),
+                        },
+                    )?;
+                    Ok(created_user)
+                }
                 None => Err(ApiError::Internal),
             },
             Err(_) => Err(ApiError::UserCreation),
@@ -54,6 +66,19 @@ impl User {
             Ok(read_user) => Ok(read_user),
             Err(_) => Err(ApiError::User),
         }
+    }
+
+    pub(crate) fn lookup(
+        db: &mut SqliteConnection,
+        user_login: &str,
+        user_hash: &str,
+    ) -> Result<User, ApiError> {
+        Ok(users
+            .filter(login.eq(user_login))
+            .filter(hash.eq(user_hash))
+            .select(User::as_select())
+            .first(db)
+            .map_err(|_| ApiError::User)?)
     }
 
     pub(crate) fn update_user(db: &mut SqliteConnection, user: &User) -> Result<(), ApiError> {

@@ -1,7 +1,7 @@
 use crate::api_error::ApiError;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(PartialEq, Debug, Serialize)]
+#[derive(PartialEq, Debug, Serialize, Deserialize, Clone)]
 pub(crate) struct Role {
     pub(crate) id: i32,
     pub(crate) role: String,
@@ -9,10 +9,7 @@ pub(crate) struct Role {
 
 impl Role {
     /// checking if role a > role b
-    pub(crate) fn superior_to(
-        a: Role,
-        b: Role,
-    ) -> Result<bool, ApiError> {
+    pub(crate) fn superior_to(a: Role, b: Role) -> Result<bool, ApiError> {
         let hierarchy = ["root", "super", "user", "visitor"];
         match (
             hierarchy.iter().position(|&r| r == b.role),
@@ -22,6 +19,27 @@ impl Role {
                 Ok(pos_a_in_hierarchy < pos_b_in_hierarchy)
             }
             _ => Err(ApiError::Internal),
+        }
+    }
+    pub(crate) fn from(s: &str) -> Result<Role, crate::models::role_model::ApiError> {
+        match s {
+            "root" => Ok(Role {
+                role: "root".into(),
+                id: 0,
+            }),
+            "super" => Ok(Role {
+                role: "super".into(),
+                id: 1,
+            }),
+            "user" => Ok(Role {
+                role: "user".into(),
+                id: 2,
+            }),
+            "visitor" => Ok(Role {
+                role: "visitor".into(),
+                id: 3,
+            }),
+            _ => Err(ApiError::Role),
         }
     }
 }

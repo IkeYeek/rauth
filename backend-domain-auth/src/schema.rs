@@ -23,6 +23,13 @@ diesel::table! {
 }
 
 diesel::table! {
+    jwt (id) {
+        id -> Integer,
+        jwt_id -> Text,
+    }
+}
+
+diesel::table! {
     roles_users (role, user_id) {
         role -> Text,
         user_id -> Integer,
@@ -51,6 +58,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     domain_rules,
     groups,
     groups_users,
+    jwt,
     roles_users,
     url_rules,
     users,

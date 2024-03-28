@@ -11,7 +11,15 @@ use diesel::{BelongingToDsl, ExpressionMethods, JoinOnDsl};
 use serde::{Deserialize, Serialize};
 
 #[derive(
-    Identifiable, Queryable, Selectable, PartialEq, Debug, Serialize, Deserialize, AsChangeset,
+    Identifiable,
+    Queryable,
+    Selectable,
+    PartialEq,
+    Debug,
+    Serialize,
+    Deserialize,
+    AsChangeset,
+    Clone,
 )]
 #[diesel(table_name = crate::schema::groups)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]

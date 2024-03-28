@@ -6,9 +6,9 @@ use crate::schema::*;
 use diesel::result::DatabaseErrorKind;
 use diesel::{
     insert_into, Associations, Identifiable, Insertable, QueryDsl, Queryable, RunQueryDsl,
-    Selectable, SqliteConnection,
+    Selectable, SelectableHelper, SqliteConnection,
 };
-use diesel::{ExpressionMethods, QueryResult};
+use diesel::{ExpressionMethods};
 use serde::{Deserialize, Serialize};
 
 #[derive(Identifiable, Selectable, Queryable, Associations, Debug, Serialize, Deserialize)]
@@ -72,6 +72,23 @@ impl RoleUser {
             Err(e) => {
                 eprintln!("{e:?}");
                 Err(ApiError::Internal)
+            }
+        }
+    }
+
+    pub(crate) fn roles_from_user(
+        db: &mut SqliteConnection,
+        user: &User,
+    ) -> Result<Role, ApiError> {
+        match crate::schema::roles_users::dsl::roles_users
+            .filter(crate::schema::roles_users::dsl::user_id.eq(user.id))
+            .select(RoleUser::as_select())
+            .first(&mut *db)
+        {
+            Ok(role) => Ok(Role::from(&role.role)?),
+            Err(e) => {
+                eprintln!("{e:?}");
+                Err(ApiError::Role)
             }
         }
     }
