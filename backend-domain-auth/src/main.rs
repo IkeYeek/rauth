@@ -13,7 +13,6 @@ use std::env;
 use std::sync::Mutex;
 
 pub(crate) mod api_error;
-mod jwt;
 pub(crate) mod models;
 pub(crate) mod routes;
 pub(crate) mod schema;

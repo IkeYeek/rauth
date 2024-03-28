@@ -1,5 +1,5 @@
 use crate::api_error::ApiError;
-use crate::jwt::JWT;
+use crate::models::jwt::JWT;
 use crate::models::role_user_model::RoleUser;
 use crate::models::user_model::User;
 use crate::{AppDatabaseState, KeySet};
