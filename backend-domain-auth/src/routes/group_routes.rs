@@ -27,6 +27,22 @@ pub(crate) async fn create_group(
     }
 }
 
+#[get("/")]
+pub(crate) async fn all_groups(
+    db: web::Data<AppDatabaseState>,
+) -> Result<web::Json<Vec<Group>>, ApiError> {
+    match db.db.lock() {
+        Ok(mut db) => {
+            let all_groups = Group::read_all(&mut db)?;
+            Ok(web::Json(all_groups))
+        }
+        Err(e) => {
+            eprintln!("{e:?}");
+            return Err(ApiError::Group);
+        }
+    }
+}
+
 #[get("/{group_id}")]
 pub(crate) async fn one_group(
     db: web::Data<AppDatabaseState>,

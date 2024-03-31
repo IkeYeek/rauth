@@ -265,6 +265,7 @@ dependencies = [
  "dotenvy",
  "jsonwebtoken",
  "serde",
+ "url",
  "uuid",
 ]
 

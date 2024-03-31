@@ -21,4 +21,5 @@ uuid = {version = "1.8", features = [
     "fast-rng",
     "macro-diagnostics",
 ]}
+url = "2.5"
 

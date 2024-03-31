@@ -4,11 +4,11 @@ use crate::models::role_user_model::roles_users::user_id;
 use crate::models::user_model::User;
 use crate::schema::*;
 use diesel::result::DatabaseErrorKind;
+use diesel::ExpressionMethods;
 use diesel::{
     insert_into, Associations, Identifiable, Insertable, QueryDsl, Queryable, RunQueryDsl,
     Selectable, SelectableHelper, SqliteConnection,
 };
-use diesel::{ExpressionMethods};
 use serde::{Deserialize, Serialize};
 
 #[derive(Identifiable, Selectable, Queryable, Associations, Debug, Serialize, Deserialize)]

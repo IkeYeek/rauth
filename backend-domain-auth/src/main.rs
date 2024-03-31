@@ -1,6 +1,7 @@
-use crate::routes::auth_routes::{auth, is_auth};
+use crate::routes::auth_routes::{auth, has_access, is_auth};
 use crate::routes::group_routes::{
-    add_user_to_group, create_group, delete_group, delete_user_from_group, one_group, update_group,
+    add_user_to_group, all_groups, create_group, delete_group, delete_user_from_group, one_group,
+    update_group,
 };
 use crate::routes::user_routes::{
     all_users, create_user, delete_user, get_user_groups, one_user, update_user,
@@ -47,10 +48,14 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .app_data(db.clone())
             .app_data(web::Data::new(keyset.clone()))
-            .service(is_auth)
-            .service(auth)
             .service(
                 web::scope("/api")
+                    .service(
+                        web::scope("/auth")
+                            .service(is_auth)
+                            .service(auth)
+                            .service(has_access),
+                    )
                     .service(
                         web::scope("/users")
                             .service(all_users)
@@ -67,7 +72,8 @@ async fn main() -> std::io::Result<()> {
                             .service(update_group)
                             .service(delete_group)
                             .service(add_user_to_group)
-                            .service(delete_user_from_group),
+                            .service(delete_user_from_group)
+                            .service(all_groups),
                     ),
             )
     })

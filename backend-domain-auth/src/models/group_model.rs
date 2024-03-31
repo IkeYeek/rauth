@@ -2,10 +2,11 @@ use crate::api_error::ApiError;
 use crate::models::group_user_model::GroupUser;
 use crate::models::user_model::User;
 use crate::schema::*;
+use actix_web::get;
 use diesel::result::{DatabaseErrorKind, Error as DieselError};
 use diesel::{
-    insert_into, AsChangeset, Identifiable, Insertable, QueryDsl, Queryable, RunQueryDsl,
-    Selectable, SelectableHelper, SqliteConnection,
+    insert_into, AsChangeset, AsExpression, Identifiable, Insertable, QueryDsl, Queryable,
+    RunQueryDsl, Selectable, SelectableHelper, SqliteConnection,
 };
 use diesel::{BelongingToDsl, ExpressionMethods, JoinOnDsl};
 use serde::{Deserialize, Serialize};
@@ -39,6 +40,18 @@ impl Group {
                 None => Err(ApiError::Internal),
             },
             Err(_) => Err(ApiError::GroupCreation),
+        }
+    }
+    pub(crate) fn read_all(db: &mut SqliteConnection) -> Result<Vec<Group>, ApiError> {
+        match crate::schema::groups::dsl::groups
+            .select(Group::as_select())
+            .load(db)
+        {
+            Ok(all_groups) => Ok(all_groups),
+            Err(e) => {
+                eprintln!("{e:?}");
+                Err(ApiError::Internal)
+            }
         }
     }
 
