@@ -84,7 +84,7 @@ impl DomainRule {
             .filter(crate::schema::domain_rules::dsl::group_id.eq(group.id))
             .select(DomainRule::as_select())
             .load(db)
-            .map_err(|err| ApiError::Internal)?)
+            .map_err(|_| ApiError::Internal)?)
     }
 
     pub(crate) fn for_user(

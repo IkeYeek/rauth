@@ -1,6 +1,7 @@
 use crate::api_error::ApiError;
 use crate::models::group_model::Group;
 use crate::models::group_user_model::groups_users::user_id;
+use crate::models::jwt_model::JWTInternal;
 use crate::models::user_model::User;
 use crate::schema::*;
 use diesel::result::DatabaseErrorKind;
@@ -35,7 +36,10 @@ impl GroupUser {
             .values(&group_user)
             .execute(&mut *db)
         {
-            Ok(_) => Ok(()),
+            Ok(_) => {
+                JWTInternal::refresh_for_user(db, user)?;
+                Ok(())
+            }
             Err(diesel::result::Error::DatabaseError(e, _)) => match e {
                 DatabaseErrorKind::UniqueViolation
                 | DatabaseErrorKind::NotNullViolation
@@ -57,6 +61,7 @@ impl GroupUser {
         match diesel::delete(group_user_entry).execute(db) {
             Ok(res) => {
                 return if res > 0 {
+                    JWTInternal::refresh_for_user(db, user)?;
                     Ok(())
                 } else {
                     Err(ApiError::Group)
@@ -85,11 +90,11 @@ impl GroupUser {
                 domain_rules::dsl::domain
                     .like(host)
                     .or(url_rules::dsl::url.like(origin))
-                .and(
-                    domain_rules::dsl::group_id
-                        .eq_any(groups)
-                        .or(url_rules::dsl::group_id.eq_any(groups)),
-                ),
+                    .and(
+                        domain_rules::dsl::group_id
+                            .eq_any(groups)
+                            .or(url_rules::dsl::group_id.eq_any(groups)),
+                    ),
             )
             .count()
             .get_result::<i64>(&mut *db)

@@ -1,16 +1,11 @@
 use crate::api_error::ApiError;
 use crate::models::group_user_model::GroupUser;
-use crate::models::jwt_model::JWT;
-use crate::models::role_user_model::RoleUser;
+use crate::models::jwt_model::JWTInternal;
 use crate::models::user_model::User;
 use crate::{AppDatabaseState, KeySet};
 use actix_web::cookie::time::Duration;
 use actix_web::cookie::Cookie;
 use actix_web::{get, post, web, HttpRequest, HttpResponse};
-use diesel::{
-    BoolExpressionMethods, ExpressionMethods, JoinOnDsl, QueryDsl, RunQueryDsl,
-    TextExpressionMethods,
-};
 use serde::{Deserialize, Serialize};
 use url::Url;
 
@@ -28,10 +23,8 @@ async fn auth(
     match db.db.lock() {
         Ok(mut db) => {
             let user = User::lookup(&mut *db, &payload.login, &payload.hash)?;
-            let user_groups = User::get_groups(&mut *db, &user)?;
-            let role = RoleUser::roles_from_user(&mut *db, &user)?;
-            let new_jwt = JWT::create(&role, &user_groups, &key_set.encoding)?;
-            JWT::register(&mut *db, &new_jwt)?;
+            let new_jwt = JWTInternal::create(&mut *db, &user, &key_set.encoding)?;
+            JWTInternal::register(&mut *db, &new_jwt)?;
             let jwt_cookie = Cookie::build("jwt", &new_jwt.token)
                 .domain(".localhost.dummy")
                 .max_age(Duration::weeks(1))
@@ -62,18 +55,31 @@ pub(crate) async fn has_access(
     db: web::Data<AppDatabaseState>,
     access_data: web::Query<AccessQS>,
     key_set: web::Data<KeySet>,
-) -> Result<&'static str, ApiError> {
+) -> Result<HttpResponse, ApiError> {
     match (
         db.db.lock(),
         Url::parse(&access_data.origin),
         request.cookie("jwt"),
     ) {
         (Ok(mut db), Ok(parsed_url), Some(user_jwt)) => {
-            let req_jwt = JWT::validate_jwt(&mut *db, user_jwt.value(), &key_set.decoding)?;
+            let mut res = HttpResponse::Ok().body("granted");
+            let req_jwt = JWTInternal::validate_jwt(&mut *db, user_jwt.value(), &key_set.decoding)?;
+            if JWTInternal::needs_refresh(&mut *db, &req_jwt)? {
+                let refresh_token =
+                    JWTInternal::refresh(&mut *db, &req_jwt.user, &req_jwt.jti, &key_set.encoding)?;
+                let jwt_cookie = Cookie::build("jwt", &refresh_token.token)
+                    .domain(".localhost.dummy")
+                    .max_age(Duration::weeks(1))
+                    .finish();
+                if let Err(e) = res.add_cookie(&jwt_cookie) {
+                    eprintln!("{e:?}");
+                    return Err(ApiError::Internal);
+                }
+            }
             match parsed_url.host_str() {
                 Some(origin_host) => {
-                    if req_jwt.roles.role == "root" {
-                        return Ok("granted my dear lord.");
+                    if req_jwt.role.role == "root" {
+                        return Ok(res);
                     }
                     let group_ids: Vec<i32> = req_jwt.groups.iter().map(|g| g.id).collect();
 
@@ -83,7 +89,7 @@ pub(crate) async fn has_access(
                         origin_host,
                         &group_ids,
                     )?;
-                    Ok("granted.")
+                    Ok(res)
                 }
                 None => Err(ApiError::JWT),
             }
@@ -101,7 +107,7 @@ pub(crate) async fn is_auth(
     match db.db.lock() {
         Ok(mut db) => match req.cookie("jwt") {
             Some(jwt_cookie) => {
-                JWT::validate_jwt(&mut db, jwt_cookie.value(), &key_set.decoding)?;
+                JWTInternal::validate_jwt(&mut db, jwt_cookie.value(), &key_set.decoding)?;
                 Ok("authed.")
             }
             None => Err(ApiError::JWT),

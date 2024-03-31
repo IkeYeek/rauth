@@ -26,6 +26,8 @@ diesel::table! {
     jwt (id) {
         id -> Integer,
         jwt_id -> Text,
+        user_id -> Integer,
+        needs_refresh -> Integer,
     }
 }
 
@@ -52,6 +54,7 @@ diesel::table! {
     }
 }
 
+diesel::joinable!(jwt -> users (user_id));
 diesel::joinable!(roles_users -> users (user_id));
 
 diesel::allow_tables_to_appear_in_same_query!(

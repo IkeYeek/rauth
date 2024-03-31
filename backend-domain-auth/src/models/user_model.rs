@@ -16,7 +16,15 @@ use diesel::{
 use serde::{Deserialize, Serialize};
 
 #[derive(
-    Identifiable, Queryable, Selectable, PartialEq, Debug, Serialize, Deserialize, AsChangeset,
+    Identifiable,
+    Queryable,
+    Selectable,
+    PartialEq,
+    Debug,
+    Serialize,
+    Deserialize,
+    AsChangeset,
+    Clone,
 )]
 #[diesel(table_name = crate::schema::users)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
@@ -28,7 +36,7 @@ pub(crate) struct User {
 
 impl User {
     pub(crate) fn create(db: &mut SqliteConnection, u: &NewUser) -> Result<User, ApiError> {
-        match (insert_into(users).values(&*u).get_results::<User>(db)) {
+        match insert_into(users).values(&*u).get_results::<User>(db) {
             Ok(mut res) => match res.pop() {
                 Some(created_user) => {
                     RoleUser::add_role_to_user(

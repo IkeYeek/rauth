@@ -1,7 +1,12 @@
 use crate::api_error::ApiError;
 use crate::models::group_model::Group;
 use crate::models::role_model::Role;
-use diesel::{insert_into, ExpressionMethods, Insertable, QueryDsl, RunQueryDsl, SqliteConnection};
+use crate::models::role_user_model::RoleUser;
+use crate::models::user_model::User;
+use diesel::{
+    insert_into, ExpressionMethods, Insertable, QueryDsl, QueryResult, Queryable, RunQueryDsl,
+    Selectable, SelectableHelper, SqliteConnection,
+};
 use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -11,41 +16,114 @@ pub(crate) struct Claims {
     pub(crate) company: String,
     pub(crate) exp: i64,
     pub(crate) jti: String,
-    pub(crate) roles: Role,
+    pub(crate) user: User,
+    pub(crate) role: Role,
     pub(crate) groups: Vec<Group>,
 }
 
-pub(crate) struct JWT {
+pub(crate) struct JWTInternal {
     pub(crate) claims: Claims,
     pub(crate) token: String,
 }
-#[derive(Insertable, Serialize, Deserialize)]
+#[derive(Insertable, Serialize, Deserialize, Selectable, Queryable)]
 #[diesel(table_name = crate::schema::jwt)]
-struct JWIId {
+struct JWT {
     jwt_id: String,
+    needs_refresh: i32,
+    user_id: i32,
 }
 
-impl JWT {
+impl JWTInternal {
     pub(crate) fn from(claims: Claims, key: &EncodingKey) -> Result<Self, ApiError> {
         let token = encode(&Header::new(Algorithm::EdDSA), &claims, key);
         if let Ok(token) = token {
-            return Ok(JWT { token, claims });
+            return Ok(JWTInternal { token, claims });
         };
         return Err(ApiError::Internal);
     }
-    pub(crate) fn create(r: &Role, g: &Vec<Group>, key: &EncodingKey) -> Result<Self, ApiError> {
+    pub(crate) fn create(
+        db: &mut SqliteConnection,
+        user: &User,
+        key: &EncodingKey,
+    ) -> Result<Self, ApiError> {
         let id = Uuid::new_v4();
         let claims = Claims {
             company: String::from("I.K.E"),
             exp: chrono::Utc::now().timestamp() + 3600 * 24 * 7,
             jti: id.to_string(),
-            roles: Role {
-                role: r.role.clone(),
-                id: r.id,
-            },
-            groups: g.to_vec(),
+            user: user.clone(),
+            role: RoleUser::roles_from_user(db, &user)?,
+            groups: User::get_groups(db, &user)?,
         };
         Ok(Self::from(claims, key)?)
+    }
+    pub(crate) fn needs_refresh(
+        db: &mut SqliteConnection,
+        claims: &Claims,
+    ) -> Result<bool, ApiError> {
+        match crate::schema::jwt::dsl::jwt
+            .filter(crate::schema::jwt::dsl::jwt_id.eq(&claims.jti))
+            .filter(crate::schema::jwt::dsl::needs_refresh.eq(1))
+            .count()
+            .get_result::<i64>(db)
+        {
+            Ok(res) => return Ok(res > 0),
+            Err(e) => {
+                eprintln!("{e:?}");
+                Err(ApiError::Internal)
+            }
+        }
+    }
+
+    pub(crate) fn delete(db: &mut SqliteConnection, jti: &str) -> Result<(), ApiError> {
+        if let Err(e) = diesel::delete(
+            crate::schema::jwt::dsl::jwt.filter(crate::schema::jwt::dsl::jwt_id.eq(jti)),
+        )
+        .execute(db)
+        {
+            eprintln!("{e:?}");
+            return Err(ApiError::Internal);
+        }
+        Ok(())
+    }
+
+    pub(crate) fn refresh(
+        db: &mut SqliteConnection,
+        user: &User,
+        jti: &str,
+        key: &EncodingKey,
+    ) -> Result<JWTInternal, ApiError> {
+        let refreshed_jwt = JWTInternal::create(db, &user, key)?;
+        JWTInternal::delete(db, jti)?;
+        Ok(refreshed_jwt)
+    }
+
+    pub(crate) fn refresh_for_user(db: &mut SqliteConnection, user: &User) -> Result<(), ApiError> {
+        match diesel::update(crate::schema::jwt::dsl::jwt)
+            .filter(crate::schema::jwt::dsl::user_id.eq(user.id))
+            .set(crate::schema::jwt::dsl::needs_refresh.eq(1))
+            .execute(db)
+        {
+            Ok(_) => Ok(()),
+            Err(e) => {
+                eprintln!("{e:?}");
+                Err(ApiError::Internal)
+            }
+        }
+    }
+
+    pub(crate) fn invalidate_user(db: &mut SqliteConnection, user: &User) -> Result<(), ApiError> {
+        match diesel::delete(
+            crate::schema::jwt::dsl::jwt.filter(crate::schema::jwt::dsl::user_id.eq(user.id)),
+        )
+        .execute(db)
+        {
+            Ok(_) => Ok(()),
+            Err(e) => {
+                eprintln!("{e:?}");
+                Err(ApiError::Internal)
+            }
+        }
     }
 
     fn is_valid_jti(db: &mut SqliteConnection, jti: &str) -> bool {
@@ -75,9 +153,11 @@ impl JWT {
         Err(ApiError::JWT)
     }
 
-    pub(crate) fn register(db: &mut SqliteConnection, token: &JWT) -> Result<(), ApiError> {
-        let insertable_jwt = JWIId {
+    pub(crate) fn register(db: &mut SqliteConnection, token: &JWTInternal) -> Result<(), ApiError> {
+        let insertable_jwt = JWT {
             jwt_id: token.claims.jti.clone(),
+            needs_refresh: 0,
+            user_id: token.claims.user.id,
         };
         insert_into(crate::schema::jwt::dsl::jwt)
             .values(&insertable_jwt)
