@@ -3,6 +3,7 @@ use crate::models::group_model::Group;
 use crate::models::user_model::{NewUser, User};
 use crate::AppDatabaseState;
 use actix_web::{delete, get, patch, post, web};
+use log::error;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize)]
@@ -21,7 +22,7 @@ pub(crate) async fn create_user(
             Ok("created.")
         }
         Err(e) => {
-            eprintln!("{e:?}");
+            error!("{e:?}");
             return Err(ApiError::Internal);
         }
     }
@@ -37,7 +38,7 @@ pub(crate) async fn all_users(
             Ok(web::Json(all_users))
         }
         Err(e) => {
-            eprintln!("{e:?}");
+            error!("{e:?}");
             return Err(ApiError::User);
         }
     }
@@ -55,7 +56,7 @@ pub(crate) async fn one_user(
             Ok(web::Json(user))
         }
         Err(e) => {
-            eprintln!("{e:?}");
+            error!("{e:?}");
             Err(ApiError::Internal)
         }
     }
@@ -86,7 +87,7 @@ async fn update_user(
             Ok("updated.")
         }
         Err(e) => {
-            eprintln!("{e:?}");
+            error!("{e:?}");
             return Err(ApiError::Internal);
         }
     };
@@ -105,7 +106,7 @@ async fn delete_user(
             Ok("deleted.")
         }
         Err(e) => {
-            eprintln!("{e:?}");
+            error!("{e:?}");
             Err(ApiError::Internal)
         }
     }
@@ -123,7 +124,7 @@ pub(crate) async fn get_user_groups(
             Ok(web::Json(User::get_groups(&mut db, &user)?))
         }
         Err(e) => {
-            eprintln!("{e:?}");
+            error!("{e:?}");
             Err(ApiError::Internal)
         }
     }

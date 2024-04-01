@@ -8,6 +8,7 @@ use diesel::{
     Selectable, SelectableHelper, SqliteConnection,
 };
 use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
+use log::error;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -69,7 +70,7 @@ impl JWTInternal {
         {
             Ok(res) => return Ok(res > 0),
             Err(e) => {
-                eprintln!("{e:?}");
+                error!("{e:?}");
                 Err(ApiError::Internal)
             }
         }
@@ -81,7 +82,7 @@ impl JWTInternal {
         )
         .execute(db)
         {
-            eprintln!("{e:?}");
+            error!("{e:?}");
             return Err(ApiError::Internal);
         }
         Ok(())
@@ -106,7 +107,7 @@ impl JWTInternal {
         {
             Ok(_) => Ok(()),
             Err(e) => {
-                eprintln!("{e:?}");
+                error!("{e:?}");
                 Err(ApiError::Internal)
             }
         }
@@ -120,7 +121,7 @@ impl JWTInternal {
         {
             Ok(_) => Ok(()),
             Err(e) => {
-                eprintln!("{e:?}");
+                error!("{e:?}");
                 Err(ApiError::Internal)
             }
         }
@@ -163,7 +164,7 @@ impl JWTInternal {
             .values(&insertable_jwt)
             .execute(db)
             .map_err(|e| {
-                eprintln!("{e:?}");
+                error!("{e:?}");
                 ApiError::Internal
             })?;
         Ok(())

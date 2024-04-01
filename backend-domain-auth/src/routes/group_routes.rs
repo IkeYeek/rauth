@@ -8,6 +8,7 @@ use crate::AppDatabaseState;
 use actix_web::{delete, get, patch, post, web};
 use diesel::prelude::*;
 use diesel::{QueryDsl, RunQueryDsl, SelectableHelper};
+use log::error;
 use serde::{Deserialize, Serialize};
 
 #[post("/")]
@@ -21,7 +22,7 @@ pub(crate) async fn create_group(
             Ok("created.")
         }
         Err(e) => {
-            eprintln!("{e:?}");
+            error!("{e:?}");
             Err(ApiError::Internal)
         }
     }
@@ -37,7 +38,7 @@ pub(crate) async fn all_groups(
             Ok(web::Json(all_groups))
         }
         Err(e) => {
-            eprintln!("{e:?}");
+            error!("{e:?}");
             return Err(ApiError::Group);
         }
     }
@@ -55,7 +56,7 @@ pub(crate) async fn one_group(
             Ok(web::Json(group))
         }
         Err(e) => {
-            eprintln!("{e:?}");
+            error!("{e:?}");
             Err(ApiError::Internal)
         }
     }
@@ -82,7 +83,7 @@ async fn update_group(
             Ok("updated.")
         }
         Err(e) => {
-            eprintln!("{e:?}");
+            error!("{e:?}");
             return Err(ApiError::Internal);
         }
     };
@@ -101,7 +102,7 @@ async fn delete_group(
             Ok("deleted.")
         }
         Err(e) => {
-            eprintln!("{e:?}");
+            error!("{e:?}");
             Err(ApiError::Internal)
         }
     }
@@ -136,7 +137,7 @@ pub(crate) async fn add_user_to_group(
             }
         }
         Err(e) => {
-            eprintln!("{e:?}");
+            error!("{e:?}");
             Err(ApiError::Internal)
         }
     }
@@ -157,7 +158,7 @@ pub(crate) async fn delete_user_from_group(
             Ok("removed.")
         }
         Err(e) => {
-            eprintln!("{e:?}");
+            error!("{e:?}");
             Err(ApiError::Internal)
         }
     }

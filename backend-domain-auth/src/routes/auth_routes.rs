@@ -6,6 +6,7 @@ use crate::{AppDatabaseState, KeySet};
 use actix_web::cookie::time::Duration;
 use actix_web::cookie::Cookie;
 use actix_web::{get, post, web, HttpRequest, HttpResponse};
+use log::error;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
@@ -33,13 +34,13 @@ async fn auth(
             match response.add_cookie(&jwt_cookie) {
                 Ok(()) => Ok(response),
                 Err(e) => {
-                    eprintln!("{e:?}");
+                    error!("{e:?}");
                     Err(ApiError::Internal)
                 }
             }
         }
         Err(e) => {
-            eprintln!("{e:?}");
+            error!("{e:?}");
             Err(ApiError::Internal)
         }
     }
@@ -72,7 +73,7 @@ pub(crate) async fn has_access(
                     .max_age(Duration::weeks(1))
                     .finish();
                 if let Err(e) = res.add_cookie(&jwt_cookie) {
-                    eprintln!("{e:?}");
+                    error!("{e:?}");
                     return Err(ApiError::Internal);
                 }
             }
@@ -113,7 +114,7 @@ pub(crate) async fn is_auth(
             None => Err(ApiError::JWT),
         },
         Err(e) => {
-            eprintln!("{e:?}");
+            error!("{e:?}");
             Err(ApiError::Internal)
         }
     }

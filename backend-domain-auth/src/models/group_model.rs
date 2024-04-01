@@ -9,6 +9,7 @@ use diesel::{
     RunQueryDsl, Selectable, SelectableHelper, SqliteConnection,
 };
 use diesel::{BelongingToDsl, ExpressionMethods, JoinOnDsl};
+use log::error;
 use serde::{Deserialize, Serialize};
 
 #[derive(
@@ -49,7 +50,7 @@ impl Group {
         {
             Ok(all_groups) => Ok(all_groups),
             Err(e) => {
-                eprintln!("{e:?}");
+                error!("{e:?}");
                 Err(ApiError::Internal)
             }
         }
@@ -64,7 +65,7 @@ impl Group {
             Ok(g) => Ok(g),
             Err(diesel::result::Error::NotFound) => Err(ApiError::Group),
             Err(e) => {
-                eprintln!("{e:?}");
+                error!("{e:?}");
                 Err(ApiError::Internal)
             }
         }

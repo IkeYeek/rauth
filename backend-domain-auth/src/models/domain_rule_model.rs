@@ -6,6 +6,7 @@ use diesel::{
     insert_into, Insertable, QueryDsl, Queryable, RunQueryDsl, Selectable, SelectableHelper,
     SqliteConnection,
 };
+use log::error;
 use serde::{Deserialize, Serialize};
 
 #[derive(Queryable, Selectable, PartialEq, Debug, Serialize, Deserialize)]
@@ -31,12 +32,12 @@ impl DomainRule {
                 diesel::result::DatabaseErrorKind::UniqueViolation
                 | diesel::result::DatabaseErrorKind::NotNullViolation => Err(ApiError::DomainRule),
                 _ => {
-                    eprintln!("{e:?}");
+                    error!("{e:?}");
                     Err(ApiError::Internal)
                 }
             },
             Err(e) => {
-                eprintln!("{e:?}");
+                error!("{e:?}");
                 Err(ApiError::Internal)
             }
         }

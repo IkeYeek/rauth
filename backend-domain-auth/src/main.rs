@@ -12,11 +12,15 @@ use dotenvy::dotenv;
 use jsonwebtoken::{DecodingKey, EncodingKey};
 use std::env;
 use std::sync::Mutex;
+use actix_web::middleware::Logger;
+use env_logger::Env;
+use log::{error, info};
 
 pub(crate) mod api_error;
 pub(crate) mod models;
 pub(crate) mod routes;
 pub(crate) mod schema;
+mod auth_middleware;
 
 struct AppDatabaseState {
     db: Mutex<SqliteConnection>,
@@ -33,8 +37,11 @@ pub fn establish_connection() -> SqliteConnection {
 }
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    std::env::set_var("RUST_LOG", "info");
+    std::env::set_var("RUST_BACKTRACE", "1");
+    env_logger::init_from_env(Env::default().default_filter_or("info"));
     dotenv().ok();
-    let db = web::Data::new(AppDatabaseState {
+    let storage = web::Data::new(AppDatabaseState {
         db: Mutex::new(establish_connection()),
     });
     let keyset = KeySet {
@@ -46,8 +53,9 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(move || {
         App::new()
-            .app_data(db.clone())
+            .app_data(storage.clone())
             .app_data(web::Data::new(keyset.clone()))
+            .wrap(Logger::new("%r - %s - %a %{User-Agent}i"))
             .service(
                 web::scope("/api")
                     .service(
@@ -78,6 +86,7 @@ async fn main() -> std::io::Result<()> {
             )
     })
     .bind("0.0.0.0:8080")?
+
     .run()
     .await
 }

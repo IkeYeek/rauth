@@ -9,6 +9,7 @@ use diesel::{
     insert_into, Associations, Identifiable, Insertable, QueryDsl, Queryable, RunQueryDsl,
     Selectable, SelectableHelper, SqliteConnection,
 };
+use log::error;
 use serde::{Deserialize, Serialize};
 
 #[derive(Identifiable, Selectable, Queryable, Associations, Debug, Serialize, Deserialize)]
@@ -40,12 +41,12 @@ impl RoleUser {
                 | DatabaseErrorKind::NotNullViolation
                 | DatabaseErrorKind::CheckViolation => Err(ApiError::Role),
                 _ => {
-                    eprintln!("{e:?}");
+                    error!("{e:?}");
                     Err(ApiError::Internal)
                 }
             },
             Err(e) => {
-                eprintln!("{e:?}");
+                error!("{e:?}");
                 Err(ApiError::Internal)
             }
         }
@@ -70,7 +71,7 @@ impl RoleUser {
             }
             Err(diesel::result::Error::NotFound) => Err(ApiError::Role),
             Err(e) => {
-                eprintln!("{e:?}");
+                error!("{e:?}");
                 Err(ApiError::Internal)
             }
         }
@@ -87,7 +88,7 @@ impl RoleUser {
         {
             Ok(role) => Ok(Role::from(&role.role)?),
             Err(e) => {
-                eprintln!("{e:?}");
+                error!("{e:?}");
                 Err(ApiError::Role)
             }
         }

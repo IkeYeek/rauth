@@ -13,6 +13,7 @@ use diesel::{
     insert_into, AsChangeset, Identifiable, Insertable, JoinOnDsl, QueryDsl, Queryable,
     RunQueryDsl, Selectable, SelectableHelper, SqliteConnection,
 };
+use log::error;
 use serde::{Deserialize, Serialize};
 
 #[derive(
@@ -59,7 +60,7 @@ impl User {
         match users.select(User::as_select()).load(db) {
             Ok(all_users) => Ok(all_users),
             Err(e) => {
-                eprintln!("{e:?}");
+                error!("{e:?}");
                 Err(ApiError::Internal)
             }
         }

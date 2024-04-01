@@ -10,6 +10,7 @@ use diesel::{
     Selectable, SqliteConnection,
 };
 use diesel::{BoolExpressionMethods, ExpressionMethods, JoinOnDsl, TextExpressionMethods};
+use log::error;
 use serde::{Deserialize, Serialize};
 
 #[derive(Identifiable, Selectable, Queryable, Associations, Debug, Serialize, Deserialize)]
@@ -69,7 +70,7 @@ impl GroupUser {
             }
             Err(diesel::result::Error::NotFound) => Err(ApiError::Group),
             Err(e) => {
-                eprintln!("{e:?}");
+                error!("{e:?}");
                 Err(ApiError::Internal)
             }
         }
@@ -101,7 +102,7 @@ impl GroupUser {
         {
             Ok(n) => return if n > 0 { Ok(()) } else { Err(ApiError::Group) },
             Err(e) => {
-                eprintln!("{e:?}");
+                error!("{e:?}");
                 Err(ApiError::Internal)
             }
         }
