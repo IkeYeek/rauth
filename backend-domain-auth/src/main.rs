@@ -1,6 +1,8 @@
-use crate::route_guards::TargetUserOrSuperUserGuard;
 use crate::routes::auth_routes::{auth, has_access, is_auth};
-use crate::routes::group_routes::{add_user_to_group, all_groups, create_group, delete_group, delete_user_from_group, list_users_from_group, one_group, update_group};
+use crate::routes::group_routes::{
+    add_user_to_group, all_groups, create_group, delete_group, delete_user_from_group,
+    list_users_from_group, one_group, update_group,
+};
 use crate::routes::user_routes::{
     all_users, create_user, delete_user, get_user_groups, one_user, update_user,
 };
@@ -14,13 +16,13 @@ use std::env;
 use std::sync::Mutex;
 
 pub(crate) mod api_error;
+pub(crate) mod helpers;
 pub(crate) mod models;
-mod route_guards;
+pub(crate) mod route_guards;
 pub(crate) mod routes;
 pub(crate) mod schema;
-mod helpers;
 
-struct AppDatabaseState {
+struct StorageState {
     db: Mutex<SqliteConnection>,
 }
 #[derive(Clone)]
@@ -35,11 +37,11 @@ pub fn establish_connection() -> SqliteConnection {
 }
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    std::env::set_var("RUST_LOG", "info");
-    std::env::set_var("RUST_BACKTRACE", "1");
+    env::set_var("RUST_LOG", "info");
+    env::set_var("RUST_BACKTRACE", "1");
     env_logger::init_from_env(Env::default().default_filter_or("info"));
     dotenv().ok();
-    let storage = web::Data::new(AppDatabaseState {
+    let storage = web::Data::new(StorageState {
         db: Mutex::new(establish_connection()),
     });
     let keyset = KeySet {

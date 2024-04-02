@@ -43,17 +43,21 @@ impl URLRule {
         }
     }
 
-    pub(crate) fn read_all(db: &mut SqliteConnection) -> Result<Vec<URLRule>, ApiError> {
+    pub(crate) fn get(db: &mut SqliteConnection, rule_id: i32) -> Result<URLRule, ApiError> {
+        Ok(crate::schema::url_rules::dsl::url_rules.filter(crate::schema::url_rules::dsl::id.eq(rule_id)).get_result::<URLRule>(db).map_err(|_| ApiError::Internal)?)
+    }
+
+    pub(crate) fn get_all(db: &mut SqliteConnection) -> Result<Vec<URLRule>, ApiError> {
         Ok(crate::schema::url_rules::dsl::url_rules
             .select(URLRule::as_select())
             .load(db)
             .map_err(|_| ApiError::Internal)?)
     }
 
-    pub(crate) fn delete(db: &mut SqliteConnection, url_rule: &URLRule) -> Result<(), ApiError> {
+    pub(crate) fn delete(db: &mut SqliteConnection, url_rule_id: i32) -> Result<(), ApiError> {
         match diesel::delete(
             crate::schema::url_rules::dsl::url_rules
-                .filter(crate::schema::url_rules::dsl::id.eq(url_rule.id)),
+                .filter(crate::schema::url_rules::dsl::id.eq(url_rule_id)),
         )
         .execute(db)
         {
@@ -102,7 +106,7 @@ impl URLRule {
 
 #[derive(Insertable, Serialize, Deserialize)]
 #[diesel(table_name = crate::schema::url_rules)]
-pub struct NewURLRule<'a> {
-    pub(crate) url: &'a str,
+pub struct NewURLRule {
+    pub(crate) url: String,
     pub(crate) group_id: i32,
 }

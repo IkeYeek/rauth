@@ -1,15 +1,15 @@
 use crate::api_error::ApiError;
+use crate::helpers::try_get_connection;
 use crate::models::group_model::Group;
 use crate::models::user_model::{NewUser, User};
-use crate::AppDatabaseState;
+use crate::StorageState;
 use actix_web::web;
 use log::error;
 use serde::{Deserialize, Serialize};
-use crate::helpers::try_get_connection;
 
 pub(crate) async fn create_user(
     form_data: web::Json<NewUser>,
-    db: web::Data<AppDatabaseState>,
+    db: web::Data<StorageState>,
 ) -> Result<&'static str, ApiError> {
     let mut db = try_get_connection(&db)?;
     User::create(&mut db, &form_data.0)?;
@@ -17,7 +17,7 @@ pub(crate) async fn create_user(
 }
 
 pub(crate) async fn all_users(
-    db: web::Data<AppDatabaseState>,
+    db: web::Data<StorageState>,
 ) -> Result<web::Json<Vec<User>>, ApiError> {
     let mut db = try_get_connection(&db)?;
     let all_users = User::read_all(&mut db)?;
@@ -25,7 +25,7 @@ pub(crate) async fn all_users(
 }
 
 pub(crate) async fn one_user(
-    db: web::Data<AppDatabaseState>,
+    db: web::Data<StorageState>,
     path: web::Path<i32>,
 ) -> Result<web::Json<User>, ApiError> {
     let mut db = try_get_connection(&db)?;
@@ -40,7 +40,7 @@ pub(crate) struct UserUpdatePayload {
     new_hash: Option<String>,
 }
 pub(crate) async fn update_user(
-    db: web::Data<AppDatabaseState>,
+    db: web::Data<StorageState>,
     user_update_payload: web::Json<UserUpdatePayload>,
     path: web::Path<i32>,
 ) -> Result<&'static str, ApiError> {
@@ -58,7 +58,7 @@ pub(crate) async fn update_user(
 }
 
 pub(crate) async fn delete_user(
-    db: web::Data<AppDatabaseState>,
+    db: web::Data<StorageState>,
     path: web::Path<i32>,
 ) -> Result<&'static str, ApiError> {
     let mut db = try_get_connection(&db)?;
@@ -69,7 +69,7 @@ pub(crate) async fn delete_user(
 }
 
 pub(crate) async fn get_user_groups(
-    db: web::Data<AppDatabaseState>,
+    db: web::Data<StorageState>,
     path: web::Path<i32>,
 ) -> Result<web::Json<Vec<Group>>, ApiError> {
     let mut db = try_get_connection(&db)?;

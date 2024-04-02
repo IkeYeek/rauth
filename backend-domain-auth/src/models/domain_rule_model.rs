@@ -43,20 +43,30 @@ impl DomainRule {
         }
     }
 
-    pub(crate) fn read_all(db: &mut SqliteConnection) -> Result<Vec<DomainRule>, ApiError> {
+    pub(crate) fn get_all(db: &mut SqliteConnection) -> Result<Vec<DomainRule>, ApiError> {
         Ok(crate::schema::domain_rules::dsl::domain_rules
             .select(DomainRule::as_select())
             .load(db)
-            .map_err(|_| ApiError::Internal)?)
+            .map_err(|e| {
+                error!("{e:?}");
+                ApiError::Internal
+            })?)
+    }
+
+    pub(crate) fn get(db: &mut SqliteConnection, rule_id: i32) -> Result<DomainRule, ApiError> {
+        Ok(crate::schema::domain_rules::dsl::domain_rules.filter(crate::schema::domain_rules::dsl::id.eq(rule_id)).get_result::<DomainRule>(db).map_err(|e| {
+            error!("{e:?}");
+            ApiError::Internal
+        })?)
     }
 
     pub(crate) fn delete(
         db: &mut SqliteConnection,
-        domain_rule: &DomainRule,
+        domain_rule_id: i32,
     ) -> Result<(), ApiError> {
         match diesel::delete(
             crate::schema::domain_rules::dsl::domain_rules
-                .filter(crate::schema::domain_rules::dsl::id.eq(domain_rule.id)),
+                .filter(crate::schema::domain_rules::dsl::id.eq(domain_rule_id)),
         )
         .execute(db)
         {
@@ -108,7 +118,7 @@ impl DomainRule {
 
 #[derive(Insertable, Serialize, Deserialize)]
 #[diesel(table_name = crate::schema::domain_rules)]
-pub struct NewDomainRule<'a> {
-    pub(crate) domain: &'a str,
+pub struct NewDomainRule {
+    pub(crate) domain: String,
     pub(crate) group_id: i32,
 }

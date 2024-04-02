@@ -1,19 +1,19 @@
 use crate::api_error::ApiError;
+use crate::helpers::try_get_connection;
 use crate::models::group_model::{Group, NewGroup};
 use crate::models::group_user_model::GroupUser;
 use crate::models::user_model::User;
 use crate::schema::groups::dsl::*;
 use crate::schema::users::dsl::users;
-use crate::AppDatabaseState;
+use crate::StorageState;
 use actix_web::{delete, get, patch, post, web};
 use diesel::prelude::*;
 use diesel::{QueryDsl, RunQueryDsl, SelectableHelper};
 use log::error;
 use serde::{Deserialize, Serialize};
-use crate::helpers::try_get_connection;
 
 pub(crate) async fn create_group(
-    db: web::Data<AppDatabaseState>,
+    db: web::Data<StorageState>,
     new_group: web::Json<NewGroup>,
 ) -> Result<&'static str, ApiError> {
     let mut db = try_get_connection(&db)?;
@@ -22,7 +22,7 @@ pub(crate) async fn create_group(
 }
 
 pub(crate) async fn all_groups(
-    db: web::Data<AppDatabaseState>,
+    db: web::Data<StorageState>,
 ) -> Result<web::Json<Vec<Group>>, ApiError> {
     let mut db = try_get_connection(&db)?;
     let all_groups = Group::read_all(&mut db)?;
@@ -30,7 +30,7 @@ pub(crate) async fn all_groups(
 }
 
 pub(crate) async fn one_group(
-    db: web::Data<AppDatabaseState>,
+    db: web::Data<StorageState>,
     path: web::Path<i32>,
 ) -> Result<web::Json<Group>, ApiError> {
     let mut db = try_get_connection(&db)?;
@@ -44,7 +44,7 @@ pub(crate) struct GroupUpdatePayload {
     new_name: Option<String>,
 }
 pub(crate) async fn update_group(
-    db: web::Data<AppDatabaseState>,
+    db: web::Data<StorageState>,
     group_update_payload: web::Json<GroupUpdatePayload>,
     path: web::Path<i32>,
 ) -> Result<&'static str, ApiError> {
@@ -59,7 +59,7 @@ pub(crate) async fn update_group(
 }
 
 pub(crate) async fn delete_group(
-    db: web::Data<AppDatabaseState>,
+    db: web::Data<StorageState>,
     path: web::Path<i32>,
 ) -> Result<&'static str, ApiError> {
     let mut db = try_get_connection(&db)?;
@@ -73,7 +73,7 @@ pub(crate) struct AddGroupPayload {
     user_id: i32,
 }
 pub(crate) async fn add_user_to_group(
-    db: web::Data<AppDatabaseState>,
+    db: web::Data<StorageState>,
     path: web::Path<i32>,
     payload: web::Json<AddGroupPayload>,
 ) -> Result<&'static str, ApiError> {
@@ -97,7 +97,7 @@ pub(crate) async fn add_user_to_group(
 }
 
 pub(crate) async fn delete_user_from_group(
-    db: web::Data<AppDatabaseState>,
+    db: web::Data<StorageState>,
     path: web::Path<i32>,
     payload: web::Json<AddGroupPayload>,
 ) -> Result<&'static str, ApiError> {
@@ -109,7 +109,10 @@ pub(crate) async fn delete_user_from_group(
     Ok("removed.")
 }
 
-pub(crate) async fn list_users_from_group(db: web::Data<AppDatabaseState>, path: web::Path<i32>) -> Result<web::Json<Group>, ApiError> {
+pub(crate) async fn list_users_from_group(
+    db: web::Data<StorageState>,
+    path: web::Path<i32>,
+) -> Result<web::Json<Group>, ApiError> {
     let mut db = try_get_connection(&db)?;
     let group_id = path.into_inner();
     let group = Group::read_by_id(&mut db, group_id)?;

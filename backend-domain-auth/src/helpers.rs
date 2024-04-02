@@ -1,11 +1,13 @@
-use std::sync::MutexGuard;
+use crate::api_error::ApiError;
+use crate::StorageState;
 use actix_web::web;
 use diesel::SqliteConnection;
 use log::error;
-use crate::api_error::ApiError;
-use crate::AppDatabaseState;
+use std::sync::MutexGuard;
 
-pub(crate) fn try_get_connection(db: &web::Data<AppDatabaseState>) -> Result<MutexGuard<SqliteConnection>, ApiError> {
+pub(crate) fn try_get_connection(
+    db: &web::Data<StorageState>,
+) -> Result<MutexGuard<SqliteConnection>, ApiError> {
     db.db.try_lock().map_err(|e| {
         error!("{e:?}");
         ApiError::Internal

@@ -1,15 +1,15 @@
 use crate::api_error::ApiError;
+use crate::helpers::try_get_connection;
 use crate::models::group_user_model::GroupUser;
 use crate::models::jwt_model::JWTInternal;
 use crate::models::user_model::User;
-use crate::{AppDatabaseState, KeySet};
+use crate::{StorageState, KeySet};
 use actix_web::cookie::time::Duration;
 use actix_web::cookie::Cookie;
 use actix_web::{web, HttpRequest, HttpResponse};
 use log::error;
 use serde::{Deserialize, Serialize};
 use url::Url;
-use crate::helpers::try_get_connection;
 
 #[derive(Serialize, Deserialize)]
 pub(crate) struct AuthPayload {
@@ -17,7 +17,7 @@ pub(crate) struct AuthPayload {
     hash: String,
 }
 pub(crate) async fn auth(
-    db: web::Data<AppDatabaseState>,
+    db: web::Data<StorageState>,
     payload: web::Json<AuthPayload>,
     key_set: web::Data<KeySet>,
 ) -> Result<HttpResponse, ApiError> {
@@ -45,15 +45,12 @@ pub(crate) struct AccessQS {
 }
 pub(crate) async fn has_access(
     request: HttpRequest,
-    db: web::Data<AppDatabaseState>,
+    db: web::Data<StorageState>,
     access_data: web::Query<AccessQS>,
     key_set: web::Data<KeySet>,
 ) -> Result<HttpResponse, ApiError> {
     let mut db = try_get_connection(&db)?;
-    match (
-        Url::parse(&access_data.origin),
-        request.cookie("jwt"),
-    ) {
+    match (Url::parse(&access_data.origin), request.cookie("jwt")) {
         (Ok(parsed_url), Some(user_jwt)) => {
             let mut res = HttpResponse::Ok().body("granted");
             let req_jwt = JWTInternal::validate_jwt(&mut *db, user_jwt.value(), &key_set.decoding)?;
@@ -93,7 +90,7 @@ pub(crate) async fn has_access(
 
 pub(crate) async fn is_auth(
     req: HttpRequest,
-    db: web::Data<AppDatabaseState>,
+    db: web::Data<StorageState>,
     key_set: web::Data<KeySet>,
 ) -> Result<&'static str, ApiError> {
     let mut db = try_get_connection(&db)?;
