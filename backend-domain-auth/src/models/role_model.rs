@@ -3,7 +3,6 @@ use serde::{Deserialize, Serialize};
 
 #[derive(PartialEq, Debug, Serialize, Deserialize, Clone)]
 pub(crate) struct Role {
-    pub(crate) id: i32,
     pub(crate) role: String,
 }
 
@@ -25,19 +24,15 @@ impl Role {
         match s {
             "root" => Ok(Role {
                 role: "root".into(),
-                id: 0,
             }),
             "super" => Ok(Role {
                 role: "super".into(),
-                id: 1,
             }),
             "user" => Ok(Role {
                 role: "user".into(),
-                id: 2,
             }),
             "visitor" => Ok(Role {
                 role: "visitor".into(),
-                id: 3,
             }),
             _ => Err(ApiError::Role),
         }

@@ -44,7 +44,6 @@ impl User {
                         db,
                         &created_user,
                         &Role {
-                            id: 0,
                             role: "root".to_string(),
                         },
                     )?;

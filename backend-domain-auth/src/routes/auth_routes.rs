@@ -5,40 +5,33 @@ use crate::models::user_model::User;
 use crate::{AppDatabaseState, KeySet};
 use actix_web::cookie::time::Duration;
 use actix_web::cookie::Cookie;
-use actix_web::{get, post, web, HttpRequest, HttpResponse};
+use actix_web::{web, HttpRequest, HttpResponse};
 use log::error;
 use serde::{Deserialize, Serialize};
 use url::Url;
+use crate::helpers::try_get_connection;
 
 #[derive(Serialize, Deserialize)]
-struct AuthPayload {
+pub(crate) struct AuthPayload {
     login: String,
     hash: String,
 }
-#[post("/")]
-async fn auth(
+pub(crate) async fn auth(
     db: web::Data<AppDatabaseState>,
     payload: web::Json<AuthPayload>,
     key_set: web::Data<KeySet>,
 ) -> Result<HttpResponse, ApiError> {
-    match db.db.lock() {
-        Ok(mut db) => {
-            let user = User::lookup(&mut *db, &payload.login, &payload.hash)?;
-            let new_jwt = JWTInternal::create(&mut *db, &user, &key_set.encoding)?;
-            JWTInternal::register(&mut *db, &new_jwt)?;
-            let jwt_cookie = Cookie::build("jwt", &new_jwt.token)
-                .domain(".localhost.dummy")
-                .max_age(Duration::weeks(1))
-                .finish();
-            let mut response = HttpResponse::Ok().body("authed.");
-            match response.add_cookie(&jwt_cookie) {
-                Ok(()) => Ok(response),
-                Err(e) => {
-                    error!("{e:?}");
-                    Err(ApiError::Internal)
-                }
-            }
-        }
+    let mut db = try_get_connection(&db)?;
+    let user = User::lookup(&mut *db, &payload.login, &payload.hash)?;
+    let new_jwt = JWTInternal::create(&mut *db, &user, &key_set.encoding)?;
+    JWTInternal::register(&mut *db, &new_jwt)?;
+    let jwt_cookie = Cookie::build("jwt", &new_jwt.token)
+        .domain(".localhost.dummy")
+        .max_age(Duration::weeks(1))
+        .finish();
+    let mut response = HttpResponse::Ok().body("authed.");
+    match response.add_cookie(&jwt_cookie) {
+        Ok(()) => Ok(response),
         Err(e) => {
             error!("{e:?}");
             Err(ApiError::Internal)
@@ -47,22 +40,21 @@ async fn auth(
 }
 
 #[derive(Serialize, Deserialize)]
-struct AccessQS {
+pub(crate) struct AccessQS {
     origin: String,
 }
-#[get("/has_access")]
 pub(crate) async fn has_access(
     request: HttpRequest,
     db: web::Data<AppDatabaseState>,
     access_data: web::Query<AccessQS>,
     key_set: web::Data<KeySet>,
 ) -> Result<HttpResponse, ApiError> {
+    let mut db = try_get_connection(&db)?;
     match (
-        db.db.lock(),
         Url::parse(&access_data.origin),
         request.cookie("jwt"),
     ) {
-        (Ok(mut db), Ok(parsed_url), Some(user_jwt)) => {
+        (Ok(parsed_url), Some(user_jwt)) => {
             let mut res = HttpResponse::Ok().body("granted");
             let req_jwt = JWTInternal::validate_jwt(&mut *db, user_jwt.value(), &key_set.decoding)?;
             if JWTInternal::needs_refresh(&mut *db, &req_jwt)? {
@@ -99,23 +91,17 @@ pub(crate) async fn has_access(
     }
 }
 
-#[get("/")]
 pub(crate) async fn is_auth(
     req: HttpRequest,
     db: web::Data<AppDatabaseState>,
     key_set: web::Data<KeySet>,
 ) -> Result<&'static str, ApiError> {
-    match db.db.lock() {
-        Ok(mut db) => match req.cookie("jwt") {
-            Some(jwt_cookie) => {
-                JWTInternal::validate_jwt(&mut db, jwt_cookie.value(), &key_set.decoding)?;
-                Ok("authed.")
-            }
-            None => Err(ApiError::JWT),
-        },
-        Err(e) => {
-            error!("{e:?}");
-            Err(ApiError::Internal)
+    let mut db = try_get_connection(&db)?;
+    match req.cookie("jwt") {
+        Some(jwt_cookie) => {
+            JWTInternal::validate_jwt(&mut db, jwt_cookie.value(), &key_set.decoding)?;
+            Ok("authed.")
         }
+        None => Err(ApiError::JWT),
     }
 }

@@ -1,26 +1,24 @@
+use crate::route_guards::TargetUserOrSuperUserGuard;
 use crate::routes::auth_routes::{auth, has_access, is_auth};
-use crate::routes::group_routes::{
-    add_user_to_group, all_groups, create_group, delete_group, delete_user_from_group, one_group,
-    update_group,
-};
+use crate::routes::group_routes::{add_user_to_group, all_groups, create_group, delete_group, delete_user_from_group, list_users_from_group, one_group, update_group};
 use crate::routes::user_routes::{
     all_users, create_user, delete_user, get_user_groups, one_user, update_user,
 };
+use actix_web::middleware::{Logger, NormalizePath, TrailingSlash};
 use actix_web::{web, App, HttpServer};
 use diesel::{Connection, SqliteConnection};
 use dotenvy::dotenv;
+use env_logger::Env;
 use jsonwebtoken::{DecodingKey, EncodingKey};
 use std::env;
 use std::sync::Mutex;
-use actix_web::middleware::Logger;
-use env_logger::Env;
-use log::{error, info};
 
 pub(crate) mod api_error;
 pub(crate) mod models;
+mod route_guards;
 pub(crate) mod routes;
 pub(crate) mod schema;
-mod auth_middleware;
+mod helpers;
 
 struct AppDatabaseState {
     db: Mutex<SqliteConnection>,
@@ -50,43 +48,72 @@ async fn main() -> std::io::Result<()> {
         decoding: DecodingKey::from_ed_pem(include_str!("../keys/public.pem").as_bytes())
             .expect("Couldn't load public key"),
     };
-
     HttpServer::new(move || {
         App::new()
             .app_data(storage.clone())
             .app_data(web::Data::new(keyset.clone()))
+            .wrap(NormalizePath::new(TrailingSlash::Always))
             .wrap(Logger::new("%r - %s - %a %{User-Agent}i"))
             .service(
                 web::scope("/api")
                     .service(
                         web::scope("/auth")
-                            .service(is_auth)
-                            .service(auth)
-                            .service(has_access),
+                            .service(
+                                web::resource("/")
+                                    .route(web::get().to(is_auth))
+                                    .route(web::post().to(auth)),
+                            )
+                            .service(
+                                web::resource("/has_access/").route(web::get().to(has_access)),
+                            ),
                     )
                     .service(
                         web::scope("/users")
-                            .service(all_users)
-                            .service(create_user)
-                            .service(one_user)
-                            .service(update_user)
-                            .service(delete_user)
-                            .service(get_user_groups),
+                            .service(
+                                web::resource("/")
+                                    .route(web::get().to(all_users))
+                                    .route(web::post().to(create_user)),
+                            )
+                            .service(
+                                web::scope("/{user}")
+                                    .service(
+                                        web::resource("/")
+                                            .route(web::get().to(one_user))
+                                            .route(web::patch().to(update_user))
+                                            .route(web::delete().to(delete_user)),
+                                    )
+                                    .service(
+                                        web::resource("/groups/")
+                                            .route(web::get().to(get_user_groups)),
+                                    ),
+                            ),
                     )
                     .service(
                         web::scope("/groups")
-                            .service(create_group)
-                            .service(one_group)
-                            .service(update_group)
-                            .service(delete_group)
-                            .service(add_user_to_group)
-                            .service(delete_user_from_group)
-                            .service(all_groups),
+                            .service(
+                                web::resource("/")
+                                    .route(web::get().to(all_groups))
+                                    .route(web::post().to(create_group)),
+                            )
+                            .service(
+                                web::scope("/{group_id}")
+                                    .service(
+                                        web::resource("/")
+                                            .route(web::get().to(one_group))
+                                            .route(web::patch().to(update_group))
+                                            .route(web::delete().to(delete_group)),
+                                    )
+                                    .service(
+                                        web::resource("/users/")
+                                            .route(web::get().to(list_users_from_group))
+                                            .route(web::post().to(add_user_to_group))
+                                            .route(web::delete().to(delete_user_from_group)),
+                                    ),
+                            ),
                     ),
             )
     })
     .bind("0.0.0.0:8080")?
-
     .run()
     .await
 }

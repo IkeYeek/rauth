@@ -10,156 +10,108 @@ use diesel::prelude::*;
 use diesel::{QueryDsl, RunQueryDsl, SelectableHelper};
 use log::error;
 use serde::{Deserialize, Serialize};
+use crate::helpers::try_get_connection;
 
-#[post("/")]
 pub(crate) async fn create_group(
     db: web::Data<AppDatabaseState>,
     new_group: web::Json<NewGroup>,
 ) -> Result<&'static str, ApiError> {
-    match db.db.lock() {
-        Ok(mut db) => {
-            let _ = Group::create_group(&mut db, &new_group)?;
-            Ok("created.")
-        }
-        Err(e) => {
-            error!("{e:?}");
-            Err(ApiError::Internal)
-        }
-    }
+    let mut db = try_get_connection(&db)?;
+    let _ = Group::create_group(&mut db, &new_group)?;
+    Ok("created.")
 }
 
-#[get("/")]
 pub(crate) async fn all_groups(
     db: web::Data<AppDatabaseState>,
 ) -> Result<web::Json<Vec<Group>>, ApiError> {
-    match db.db.lock() {
-        Ok(mut db) => {
-            let all_groups = Group::read_all(&mut db)?;
-            Ok(web::Json(all_groups))
-        }
-        Err(e) => {
-            error!("{e:?}");
-            return Err(ApiError::Group);
-        }
-    }
+    let mut db = try_get_connection(&db)?;
+    let all_groups = Group::read_all(&mut db)?;
+    Ok(web::Json(all_groups))
 }
 
-#[get("/{group_id}")]
 pub(crate) async fn one_group(
     db: web::Data<AppDatabaseState>,
     path: web::Path<i32>,
 ) -> Result<web::Json<Group>, ApiError> {
-    match db.db.lock() {
-        Ok(mut db) => {
-            let group_id = path.into_inner();
-            let group = Group::read_by_id(&mut db, group_id)?;
-            Ok(web::Json(group))
-        }
-        Err(e) => {
-            error!("{e:?}");
-            Err(ApiError::Internal)
-        }
-    }
+    let mut db = try_get_connection(&db)?;
+    let group_id = path.into_inner();
+    let group = Group::read_by_id(&mut db, group_id)?;
+    Ok(web::Json(group))
 }
 
 #[derive(Serialize, Deserialize)]
-struct GroupUpdatePayload {
+pub(crate) struct GroupUpdatePayload {
     new_name: Option<String>,
 }
-#[patch("/{group}")]
-async fn update_group(
+pub(crate) async fn update_group(
     db: web::Data<AppDatabaseState>,
     group_update_payload: web::Json<GroupUpdatePayload>,
     path: web::Path<i32>,
 ) -> Result<&'static str, ApiError> {
+    let mut db = try_get_connection(&db)?;
     let uid = path.into_inner();
-    return match db.db.lock() {
-        Ok(mut db) => {
-            let mut group_retrieved = Group::read_by_id(&mut db, uid)?;
-            if let Some(new_name) = group_update_payload.new_name.clone() {
-                group_retrieved.name = new_name;
-            };
-            Group::update_group(&mut db, &group_retrieved)?;
-            Ok("updated.")
-        }
-        Err(e) => {
-            error!("{e:?}");
-            return Err(ApiError::Internal);
-        }
+    let mut group_retrieved = Group::read_by_id(&mut db, uid)?;
+    if let Some(new_name) = group_update_payload.new_name.clone() {
+        group_retrieved.name = new_name;
     };
+    Group::update_group(&mut db, &group_retrieved)?;
+    Ok("updated.")
 }
 
-#[delete("/{group}")]
-async fn delete_group(
+pub(crate) async fn delete_group(
     db: web::Data<AppDatabaseState>,
     path: web::Path<i32>,
 ) -> Result<&'static str, ApiError> {
-    match db.db.lock() {
-        Ok(mut db) => {
-            let uid = path.into_inner();
-            let group = Group::read_by_id(&mut db, uid)?;
-            Group::delete_group(&mut db, &group)?;
-            Ok("deleted.")
-        }
-        Err(e) => {
-            error!("{e:?}");
-            Err(ApiError::Internal)
-        }
-    }
+    let mut db = try_get_connection(&db)?;
+    let uid = path.into_inner();
+    let group = Group::read_by_id(&mut db, uid)?;
+    Group::delete_group(&mut db, &group)?;
+    Ok("deleted.")
 }
 #[derive(Serialize, Deserialize)]
-struct AddGroupPayload {
+pub(crate) struct AddGroupPayload {
     user_id: i32,
 }
-#[post("/{group_id}/users")]
 pub(crate) async fn add_user_to_group(
     db: web::Data<AppDatabaseState>,
     path: web::Path<i32>,
     payload: web::Json<AddGroupPayload>,
 ) -> Result<&'static str, ApiError> {
-    match db.db.lock() {
-        Ok(mut db) => {
-            let path_data = path.into_inner();
-            let user = users
-                .filter(crate::schema::users::id.eq(payload.user_id))
-                .select(User::as_select())
-                .first(&mut *db);
-            let group = groups
-                .filter(id.eq(path_data))
-                .select(Group::as_select())
-                .first(&mut *db);
-            match (user, group) {
-                (Ok(user), Ok(group)) => {
-                    GroupUser::add_user_to_group(&mut db, &user, &group)?;
-                    Ok("added.")
-                }
-                _ => Err(ApiError::Group),
-            }
+    let mut db = try_get_connection(&db)?;
+    let path_data = path.into_inner();
+    let user = users
+        .filter(crate::schema::users::id.eq(payload.user_id))
+        .select(User::as_select())
+        .first(&mut *db);
+    let group = groups
+        .filter(id.eq(path_data))
+        .select(Group::as_select())
+        .first(&mut *db);
+    match (user, group) {
+        (Ok(user), Ok(group)) => {
+            GroupUser::add_user_to_group(&mut db, &user, &group)?;
+            Ok("added.")
         }
-        Err(e) => {
-            error!("{e:?}");
-            Err(ApiError::Internal)
-        }
+        _ => Err(ApiError::Group),
     }
 }
 
-#[delete("/{group_id}/users")]
 pub(crate) async fn delete_user_from_group(
     db: web::Data<AppDatabaseState>,
     path: web::Path<i32>,
     payload: web::Json<AddGroupPayload>,
 ) -> Result<&'static str, ApiError> {
-    match db.db.lock() {
-        Ok(mut db) => {
-            let group_id = path.into_inner();
-            let group = Group::read_by_id(&mut db, group_id)?;
-            let user = User::read_by_id(&mut db, payload.user_id)?;
-            GroupUser::remove_user_from_group(&mut db, &user, &group)?;
-            Ok("removed.")
-        }
-        Err(e) => {
-            error!("{e:?}");
-            Err(ApiError::Internal)
-        }
-    }
+    let mut db = try_get_connection(&db)?;
+    let group_id = path.into_inner();
+    let group = Group::read_by_id(&mut db, group_id)?;
+    let user = User::read_by_id(&mut db, payload.user_id)?;
+    GroupUser::remove_user_from_group(&mut db, &user, &group)?;
+    Ok("removed.")
+}
+
+pub(crate) async fn list_users_from_group(db: web::Data<AppDatabaseState>, path: web::Path<i32>) -> Result<web::Json<Group>, ApiError> {
+    let mut db = try_get_connection(&db)?;
+    let group_id = path.into_inner();
+    let group = Group::read_by_id(&mut db, group_id)?;
+    Ok(web::Json(group))
 }
