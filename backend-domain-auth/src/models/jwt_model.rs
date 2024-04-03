@@ -1,15 +1,22 @@
 use crate::api_error::ApiError;
+use crate::helpers::try_get_connection;
 use crate::models::group_model::Group;
 use crate::models::role_model::Role;
 use crate::models::role_user_model::RoleUser;
 use crate::models::user_model::User;
+use crate::{KeySet, StorageState};
+use actix_web::dev::Payload;
+use actix_web::{web, FromRequest, HttpRequest};
 use diesel::{
     insert_into, ExpressionMethods, Insertable, QueryDsl, QueryResult, Queryable, RunQueryDsl,
     Selectable, SelectableHelper, SqliteConnection,
 };
+use dotenvy::Error;
+use futures::future::{err, ok, Ready};
 use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use log::error;
 use serde::{Deserialize, Serialize};
+use std::sync::LockResult;
 use uuid::Uuid;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -20,6 +27,38 @@ pub(crate) struct Claims {
     pub(crate) user: User,
     pub(crate) role: Role,
     pub(crate) groups: Vec<Group>,
+}
+
+impl FromRequest for Claims {
+    type Error = ApiError;
+    type Future = Ready<Result<Self, Self::Error>>;
+
+    fn from_request(req: &HttpRequest, payload: &mut actix_web::dev::Payload) -> Self::Future {
+        let auth_header = match req.headers().get("Authorization") {
+            Some(header) => match header.to_str() {
+                Ok(header) if header.starts_with("bearer ") || header.starts_with("Bearer ") => {
+                    header[7..].trim()
+                }
+                _ => return err(ApiError::JWT),
+            },
+            None => return err(ApiError::JWT),
+        };
+
+        let db = req
+            .app_data::<web::Data<StorageState>>()
+            .and_then(|data| data.db.lock().ok());
+        let key_set = req.app_data::<web::Data<KeySet>>();
+
+        match (db, key_set) {
+            (Some(mut db), Some(key_set)) => {
+                match JWTInternal::validate_jwt(&mut db, auth_header, &key_set.decoding) {
+                    Ok(token) => ok(token),
+                    Err(e) => err(e),
+                }
+            }
+            _ => err(ApiError::JWT),
+        }
+    }
 }
 
 pub(crate) struct JWTInternal {

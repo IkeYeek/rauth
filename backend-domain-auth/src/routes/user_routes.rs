@@ -1,6 +1,7 @@
 use crate::api_error::ApiError;
 use crate::helpers::try_get_connection;
 use crate::models::group_model::Group;
+use crate::models::jwt_model::Claims;
 use crate::models::user_model::{NewUser, User};
 use crate::StorageState;
 use actix_web::web;

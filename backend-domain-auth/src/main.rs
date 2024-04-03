@@ -1,22 +1,30 @@
+use crate::middlewares::authentication_middleware::RequireAuth;
+use crate::route_guards::{SuperUserGuard, TargetUserGuard};
 use crate::routes::auth_routes::{auth, has_access, is_auth};
 use crate::routes::group_routes::{
     add_user_to_group, all_groups, create_group, delete_group, delete_user_from_group,
     list_users_from_group, one_group, update_group,
 };
+use crate::routes::rules_routes::{
+    add_domain_rule, add_url_rule, delete_domain_rule, delete_url_rule, domain_rule,
+    list_domain_rules, list_url_rules, url_rule,
+};
 use crate::routes::user_routes::{
     all_users, create_user, delete_user, get_user_groups, one_user, update_user,
 };
 use actix_web::middleware::{Logger, NormalizePath, TrailingSlash};
-use actix_web::{web, App, HttpServer};
+use actix_web::{guard, web, App, HttpServer};
 use diesel::{Connection, SqliteConnection};
 use dotenvy::dotenv;
 use env_logger::Env;
 use jsonwebtoken::{DecodingKey, EncodingKey};
 use std::env;
 use std::sync::Mutex;
+use crate::middlewares::super_user::RequireSuperUser;
 
 pub(crate) mod api_error;
 pub(crate) mod helpers;
+pub(crate) mod middlewares;
 pub(crate) mod models;
 pub(crate) mod route_guards;
 pub(crate) mod routes;
@@ -37,7 +45,7 @@ pub fn establish_connection() -> SqliteConnection {
 }
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    env::set_var("RUST_LOG", "info");
+    env::set_var("RUST_LOG", "debug");
     env::set_var("RUST_BACKTRACE", "1");
     env_logger::init_from_env(Env::default().default_filter_or("info"));
     dotenv().ok();
@@ -57,22 +65,21 @@ async fn main() -> std::io::Result<()> {
             .wrap(NormalizePath::new(TrailingSlash::Always))
             .wrap(Logger::new("%r - %s - %a %{User-Agent}i"))
             .service(
-                web::scope("/api")
+                web::scope("/auth")
                     .service(
-                        web::scope("/auth")
-                            .service(
-                                web::resource("/")
-                                    .route(web::get().to(is_auth))
-                                    .route(web::post().to(auth)),
-                            )
-                            .service(
-                                web::resource("/has_access/").route(web::get().to(has_access)),
-                            ),
+                        web::resource("/")
+                            .route(web::get().to(is_auth))
+                            .route(web::post().to(auth)),
                     )
+                    .service(web::resource("/has_access/").route(web::get().to(has_access))),
+            )
+            .service(
+                web::scope("/api")
+                    .wrap(RequireAuth)
                     .service(
                         web::scope("/users")
                             .service(
-                                web::resource("/")
+                                web::resource("/").wrap(RequireSuperUser)
                                     .route(web::get().to(all_users))
                                     .route(web::post().to(create_user)),
                             )
@@ -110,6 +117,37 @@ async fn main() -> std::io::Result<()> {
                                             .route(web::get().to(list_users_from_group))
                                             .route(web::post().to(add_user_to_group))
                                             .route(web::delete().to(delete_user_from_group)),
+                                    ),
+                            ),
+                    )
+                    .service(
+                        web::scope("/rules")
+                            .service(
+                                web::scope("/domain")
+                                    .service(
+                                        web::resource("/")
+                                            .route(web::post().to(add_domain_rule))
+                                            .route(web::get().to(list_domain_rules)),
+                                    )
+                                    .service(
+                                        web::scope("/{rule_id}").service(
+                                            web::resource("/")
+                                                .route(web::get().to(domain_rule))
+                                                .route(web::delete().to(delete_domain_rule)),
+                                        ),
+                                    ),
+                            )
+                            .service(
+                                web::scope("/url")
+                                    .service(
+                                        web::resource("/")
+                                            .route(web::post().to(add_url_rule))
+                                            .route(web::get().to(list_url_rules)),
+                                    )
+                                    .service(
+                                        web::resource("/{rule_id}")
+                                            .route(web::get().to(url_rule))
+                                            .route(web::delete().to(delete_url_rule)),
                                     ),
                             ),
                     ),

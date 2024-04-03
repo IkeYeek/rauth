@@ -32,12 +32,12 @@ impl DomainRule {
                 diesel::result::DatabaseErrorKind::UniqueViolation
                 | diesel::result::DatabaseErrorKind::NotNullViolation => Err(ApiError::DomainRule),
                 _ => {
-                    error!("{e:?}");
+                    error!("3{e:?}");
                     Err(ApiError::Internal)
                 }
             },
             Err(e) => {
-                error!("{e:?}");
+                error!("4{e:?}");
                 Err(ApiError::Internal)
             }
         }
@@ -48,22 +48,22 @@ impl DomainRule {
             .select(DomainRule::as_select())
             .load(db)
             .map_err(|e| {
-                error!("{e:?}");
+                error!("5{e:?}");
                 ApiError::Internal
             })?)
     }
 
     pub(crate) fn get(db: &mut SqliteConnection, rule_id: i32) -> Result<DomainRule, ApiError> {
-        Ok(crate::schema::domain_rules::dsl::domain_rules.filter(crate::schema::domain_rules::dsl::id.eq(rule_id)).get_result::<DomainRule>(db).map_err(|e| {
-            error!("{e:?}");
-            ApiError::Internal
-        })?)
+        Ok(crate::schema::domain_rules::dsl::domain_rules
+            .filter(crate::schema::domain_rules::dsl::id.eq(rule_id))
+            .get_result::<DomainRule>(db)
+            .map_err(|e| {
+                error!("6{e:?}");
+                ApiError::Internal
+            })?)
     }
 
-    pub(crate) fn delete(
-        db: &mut SqliteConnection,
-        domain_rule_id: i32,
-    ) -> Result<(), ApiError> {
+    pub(crate) fn delete(db: &mut SqliteConnection, domain_rule_id: i32) -> Result<(), ApiError> {
         match diesel::delete(
             crate::schema::domain_rules::dsl::domain_rules
                 .filter(crate::schema::domain_rules::dsl::id.eq(domain_rule_id)),

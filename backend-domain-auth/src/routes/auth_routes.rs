@@ -3,7 +3,7 @@ use crate::helpers::try_get_connection;
 use crate::models::group_user_model::GroupUser;
 use crate::models::jwt_model::JWTInternal;
 use crate::models::user_model::User;
-use crate::{StorageState, KeySet};
+use crate::{KeySet, StorageState};
 use actix_web::cookie::time::Duration;
 use actix_web::cookie::Cookie;
 use actix_web::{web, HttpRequest, HttpResponse};

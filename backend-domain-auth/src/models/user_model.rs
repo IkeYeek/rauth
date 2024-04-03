@@ -59,7 +59,7 @@ impl User {
         match users.select(User::as_select()).load(db) {
             Ok(all_users) => Ok(all_users),
             Err(e) => {
-                error!("{e:?}");
+                error!("1{e:?}");
                 Err(ApiError::Internal)
             }
         }

@@ -4,7 +4,7 @@ use actix_web::{HttpResponse, ResponseError};
 use derive_more::{Display, Error};
 
 #[derive(Debug, Display, Error)]
-pub(crate) enum ApiError {
+pub enum ApiError {
     #[display(fmt = "Couldn't create such group.")]
     GroupCreation,
     #[display(fmt = "Error with group.")]

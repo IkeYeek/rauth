@@ -11,8 +11,8 @@ impl Role {
     pub(crate) fn superior_to(a: Role, b: Role) -> Result<bool, ApiError> {
         let hierarchy = ["root", "super", "user", "visitor"];
         match (
-            hierarchy.iter().position(|&r| r == b.role),
             hierarchy.iter().position(|&r| r == a.role),
+            hierarchy.iter().position(|&r| r == b.role),
         ) {
             (Some(pos_a_in_hierarchy), Some(pos_b_in_hierarchy)) => {
                 Ok(pos_a_in_hierarchy < pos_b_in_hierarchy)

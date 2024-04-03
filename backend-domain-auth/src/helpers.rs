@@ -9,7 +9,7 @@ pub(crate) fn try_get_connection(
     db: &web::Data<StorageState>,
 ) -> Result<MutexGuard<SqliteConnection>, ApiError> {
     db.db.try_lock().map_err(|e| {
-        error!("{e:?}");
+        error!("2{e:?}");
         ApiError::Internal
     })
 }

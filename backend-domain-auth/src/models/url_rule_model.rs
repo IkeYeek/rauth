@@ -44,7 +44,10 @@ impl URLRule {
     }
 
     pub(crate) fn get(db: &mut SqliteConnection, rule_id: i32) -> Result<URLRule, ApiError> {
-        Ok(crate::schema::url_rules::dsl::url_rules.filter(crate::schema::url_rules::dsl::id.eq(rule_id)).get_result::<URLRule>(db).map_err(|_| ApiError::Internal)?)
+        Ok(crate::schema::url_rules::dsl::url_rules
+            .filter(crate::schema::url_rules::dsl::id.eq(rule_id))
+            .get_result::<URLRule>(db)
+            .map_err(|_| ApiError::Internal)?)
     }
 
     pub(crate) fn get_all(db: &mut SqliteConnection) -> Result<Vec<URLRule>, ApiError> {

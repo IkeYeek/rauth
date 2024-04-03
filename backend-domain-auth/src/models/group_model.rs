@@ -50,7 +50,7 @@ impl Group {
         {
             Ok(all_groups) => Ok(all_groups),
             Err(e) => {
-                error!("{e:?}");
+                error!("7$i{e:?}");
                 Err(ApiError::Internal)
             }
         }
