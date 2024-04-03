@@ -1,5 +1,4 @@
 use crate::middlewares::authentication_middleware::RequireAuth;
-use crate::route_guards::{SuperUserGuard, TargetUserGuard};
 use crate::routes::auth_routes::{auth, has_access, is_auth};
 use crate::routes::group_routes::{
     add_user_to_group, all_groups, create_group, delete_group, delete_user_from_group,
@@ -26,7 +25,6 @@ pub(crate) mod api_error;
 pub(crate) mod helpers;
 pub(crate) mod middlewares;
 pub(crate) mod models;
-pub(crate) mod route_guards;
 pub(crate) mod routes;
 pub(crate) mod schema;
 
