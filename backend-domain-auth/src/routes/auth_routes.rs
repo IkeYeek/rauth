@@ -22,9 +22,9 @@ pub(crate) async fn auth(
     key_set: web::Data<KeySet>,
 ) -> Result<HttpResponse, ApiError> {
     let mut db = try_get_connection(&db)?;
-    let user = User::lookup(&mut *db, &payload.login, &payload.hash)?;
-    let new_jwt = JWTInternal::create(&mut *db, &user, &key_set.encoding)?;
-    JWTInternal::register(&mut *db, &new_jwt)?;
+    let user = User::lookup(&mut db, &payload.login, &payload.hash)?;
+    let new_jwt = JWTInternal::create(&mut db, &user, &key_set.encoding)?;
+    JWTInternal::register(&mut db, &new_jwt)?;
     let jwt_cookie = Cookie::build("jwt", &new_jwt.token)
         .domain(".localhost.dummy")
         .max_age(Duration::weeks(1))
@@ -53,10 +53,10 @@ pub(crate) async fn has_access(
     match (Url::parse(&access_data.origin), request.cookie("jwt")) {
         (Ok(parsed_url), Some(user_jwt)) => {
             let mut res = HttpResponse::Ok().body("granted");
-            let req_jwt = JWTInternal::validate_jwt(&mut *db, user_jwt.value(), &key_set.decoding)?;
-            if JWTInternal::needs_refresh(&mut *db, &req_jwt)? {
+            let req_jwt = JWTInternal::validate_jwt(&mut db, user_jwt.value(), &key_set.decoding)?;
+            if JWTInternal::needs_refresh(&mut db, &req_jwt)? {
                 let refresh_token =
-                    JWTInternal::refresh(&mut *db, &req_jwt.user, &req_jwt.jti, &key_set.encoding)?;
+                    JWTInternal::refresh(&mut db, &req_jwt.user, &req_jwt.jti, &key_set.encoding)?;
                 let jwt_cookie = Cookie::build("jwt", &refresh_token.token)
                     .domain(".localhost.dummy")
                     .max_age(Duration::weeks(1))
@@ -74,17 +74,17 @@ pub(crate) async fn has_access(
                     let group_ids: Vec<i32> = req_jwt.groups.iter().map(|g| g.id).collect();
 
                     GroupUser::user_allowed_to_origin(
-                        &mut *db,
+                        &mut db,
                         &access_data.origin,
                         origin_host,
                         &group_ids,
                     )?;
                     Ok(res)
                 }
-                None => Err(ApiError::JWT),
+                None => Err(ApiError::Jwt),
             }
         }
-        _ => Err(ApiError::JWT),
+        _ => Err(ApiError::Jwt),
     }
 }
 
@@ -99,6 +99,6 @@ pub(crate) async fn is_auth(
             JWTInternal::validate_jwt(&mut db, jwt_cookie.value(), &key_set.decoding)?;
             Ok("authed.")
         }
-        None => Err(ApiError::JWT),
+        None => Err(ApiError::Jwt),
     }
 }

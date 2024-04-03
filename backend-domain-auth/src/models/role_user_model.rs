@@ -1,8 +1,6 @@
 use crate::api_error::ApiError;
 use crate::models::role_model::Role;
-use crate::models::role_user_model::roles_users::user_id;
 use crate::models::user_model::User;
-use crate::schema::*;
 use diesel::result::DatabaseErrorKind;
 use diesel::ExpressionMethods;
 use diesel::{
@@ -14,7 +12,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Identifiable, Selectable, Queryable, Associations, Debug, Serialize, Deserialize)]
 #[diesel(belongs_to(User))]
-#[diesel(table_name = roles_users)]
+#[diesel(table_name = crate::schema::roles_users)]
 #[diesel(primary_key(role, user_id))]
 pub(crate) struct RoleUser {
     pub(crate) role: String,
@@ -52,31 +50,6 @@ impl RoleUser {
         }
     }
 
-    pub(crate) fn remove_role_from_user(
-        db: &mut SqliteConnection,
-        user: &User,
-        role: &Role,
-    ) -> Result<(), ApiError> {
-        match diesel::delete(crate::schema::roles_users::dsl::roles_users)
-            .filter(crate::schema::roles_users::dsl::user_id.eq(user.id))
-            .filter(crate::schema::roles_users::dsl::role.eq(role.role.clone()))
-            .execute(db)
-        {
-            Ok(deleted_rows) => {
-                return if deleted_rows != 1 {
-                    Err(ApiError::Role)
-                } else {
-                    Ok(())
-                }
-            }
-            Err(diesel::result::Error::NotFound) => Err(ApiError::Role),
-            Err(e) => {
-                error!("{e:?}");
-                Err(ApiError::Internal)
-            }
-        }
-    }
-
     pub(crate) fn roles_from_user(
         db: &mut SqliteConnection,
         user: &User,
@@ -95,7 +68,7 @@ impl RoleUser {
     }
 }
 #[derive(Insertable, Serialize, Deserialize, Debug)]
-#[diesel(table_name = roles_users)]
+#[diesel(table_name = crate::schema::roles_users)]
 pub struct NewRoleUser {
     pub(crate) role: String,
     pub(crate) user_id: i32,

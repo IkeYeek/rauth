@@ -28,20 +28,19 @@ pub enum ApiError {
     Internal,
 
     #[display(fmt = "Couldn't validate jwt")]
-    JWT,
+    Jwt,
 }
 
 impl ResponseError for ApiError {
     fn status_code(&self) -> StatusCode {
         match *self {
-            ApiError::GroupCreation => StatusCode::BAD_REQUEST,
-            ApiError::Role => StatusCode::BAD_REQUEST,
-            ApiError::Group => StatusCode::BAD_REQUEST,
-            ApiError::DomainRule => StatusCode::BAD_REQUEST,
-            ApiError::JWT => StatusCode::FORBIDDEN,
-            ApiError::URLRule => StatusCode::BAD_REQUEST,
-            ApiError::UserCreation => StatusCode::BAD_REQUEST,
-            ApiError::User => StatusCode::BAD_REQUEST,
+            ApiError::GroupCreation | ApiError::Role
+            | ApiError::Group
+            | ApiError::DomainRule
+            | ApiError::URLRule
+            | ApiError::UserCreation
+            | ApiError::User => StatusCode::BAD_REQUEST,
+            ApiError::Jwt => StatusCode::FORBIDDEN,
             ApiError::Internal => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }

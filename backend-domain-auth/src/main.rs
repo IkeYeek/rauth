@@ -6,15 +6,12 @@ use crate::routes::group_routes::{
     add_user_to_group, all_groups, create_group, delete_group, delete_user_from_group,
     list_users_from_group, one_group, update_group,
 };
-use crate::routes::rules_routes::{
-    add_domain_rule, add_url_rule, delete_domain_rule, delete_url_rule, domain_rule,
-    list_domain_rules, list_url_rules, url_rule,
-};
+use crate::routes::rules_routes::{add_domain_rule, add_url_rule, delete_domain_rule, delete_url_rule, domain_rule, domain_rules_for_domain, domain_rules_for_group, domain_rules_for_user, list_domain_rules, list_url_rules, url_rule, url_rules_for_group, url_rules_for_url, url_rules_for_user};
 use crate::routes::user_routes::{
     all_users, create_user, delete_user, get_user_groups, one_user, update_user,
 };
 use actix_web::middleware::{Logger, NormalizePath, TrailingSlash};
-use actix_web::{guard, web, App, HttpServer};
+use actix_web::{web, App, HttpServer};
 use diesel::{Connection, SqliteConnection};
 use dotenvy::dotenv;
 use env_logger::Env;
@@ -37,10 +34,13 @@ struct KeySet {
     decoding: DecodingKey,
     encoding: EncodingKey,
 }
+/// # Panics
+/// panics if can't connect to database
+#[must_use]
 pub fn establish_connection() -> SqliteConnection {
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     SqliteConnection::establish(&database_url)
-        .unwrap_or_else(|_| panic!("Error connecting to {}", database_url))
+        .unwrap_or_else(|_| panic!("Error connecting to {database_url}"))
 }
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -133,6 +133,21 @@ async fn main() -> std::io::Result<()> {
                                             .route(web::get().to(list_domain_rules)),
                                     )
                                     .service(
+                                        web::scope("/for")
+                                            .service(
+                                                web::resource("/domain")
+                                                    .route(web::get().to(domain_rules_for_domain)),
+                                            )
+                                            .service(
+                                                web::resource("/group")
+                                                    .route(web::get().to(domain_rules_for_group)),
+                                            )
+                                            .service(
+                                                web::resource("/user")
+                                                    .route(web::get().to(domain_rules_for_user)),
+                                            ),
+                                    )
+                                    .service(
                                         web::scope("/{rule_id}").service(
                                             web::resource("/")
                                                 .route(web::get().to(domain_rule))
@@ -147,6 +162,21 @@ async fn main() -> std::io::Result<()> {
                                         web::resource("/")
                                             .route(web::post().to(add_url_rule))
                                             .route(web::get().to(list_url_rules)),
+                                    )
+                                    .service(
+                                        web::scope("/for")
+                                            .service(
+                                                web::resource("/url")
+                                                    .route(web::get().to(url_rules_for_url)),
+                                            )
+                                            .service(
+                                                web::resource("/group")
+                                                    .route(web::get().to(url_rules_for_group)),
+                                            )
+                                            .service(
+                                                web::resource("/user")
+                                                    .route(web::get().to(url_rules_for_user)),
+                                            ),
                                     )
                                     .service(
                                         web::resource("/{rule_id}")

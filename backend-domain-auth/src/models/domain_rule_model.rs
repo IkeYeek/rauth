@@ -44,23 +44,23 @@ impl DomainRule {
     }
 
     pub(crate) fn get_all(db: &mut SqliteConnection) -> Result<Vec<DomainRule>, ApiError> {
-        Ok(crate::schema::domain_rules::dsl::domain_rules
+        crate::schema::domain_rules::dsl::domain_rules
             .select(DomainRule::as_select())
             .load(db)
             .map_err(|e| {
                 error!("5{e:?}");
                 ApiError::Internal
-            })?)
+            })
     }
 
     pub(crate) fn get(db: &mut SqliteConnection, rule_id: i32) -> Result<DomainRule, ApiError> {
-        Ok(crate::schema::domain_rules::dsl::domain_rules
+        crate::schema::domain_rules::dsl::domain_rules
             .filter(crate::schema::domain_rules::dsl::id.eq(rule_id))
             .get_result::<DomainRule>(db)
             .map_err(|e| {
                 error!("6{e:?}");
                 ApiError::Internal
-            })?)
+            })
     }
 
     pub(crate) fn delete(db: &mut SqliteConnection, domain_rule_id: i32) -> Result<(), ApiError> {
@@ -80,22 +80,22 @@ impl DomainRule {
         db: &mut SqliteConnection,
         domain: &str,
     ) -> Result<Vec<DomainRule>, ApiError> {
-        Ok(crate::schema::domain_rules::dsl::domain_rules
+        crate::schema::domain_rules::dsl::domain_rules
             .filter(crate::schema::domain_rules::dsl::domain.eq(domain))
             .select(DomainRule::as_select())
             .load(db)
-            .map_err(|_| ApiError::Internal)?)
+            .map_err(|_| ApiError::Internal)
     }
 
     pub(crate) fn for_group(
         db: &mut SqliteConnection,
         group: &Group,
     ) -> Result<Vec<DomainRule>, ApiError> {
-        Ok(crate::schema::domain_rules::dsl::domain_rules
+        crate::schema::domain_rules::dsl::domain_rules
             .filter(crate::schema::domain_rules::dsl::group_id.eq(group.id))
             .select(DomainRule::as_select())
             .load(db)
-            .map_err(|_| ApiError::Internal)?)
+            .map_err(|_| ApiError::Internal)
     }
 
     pub(crate) fn for_user(

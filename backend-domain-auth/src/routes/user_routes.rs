@@ -1,12 +1,11 @@
 use crate::api_error::ApiError;
 use crate::helpers::try_get_connection;
 use crate::models::group_model::Group;
-use crate::models::jwt_model::Claims;
 use crate::models::user_model::{NewUser, User};
 use crate::StorageState;
 use actix_web::web;
-use log::error;
 use serde::{Deserialize, Serialize};
+use crate::models::jwt_model::JWTInternal;
 
 pub(crate) async fn create_user(
     form_data: web::Json<NewUser>,
@@ -65,6 +64,7 @@ pub(crate) async fn delete_user(
     let mut db = try_get_connection(&db)?;
     let uid = path.into_inner();
     let user = User::read_by_id(&mut db, uid)?;
+    JWTInternal::invalidate_user(&mut db, &user)?;
     User::delete_user(&mut db, &user)?;
     Ok("deleted.")
 }

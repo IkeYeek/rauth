@@ -3,13 +3,11 @@ use crate::helpers::try_get_connection;
 use crate::models::group_model::{Group, NewGroup};
 use crate::models::group_user_model::GroupUser;
 use crate::models::user_model::User;
-use crate::schema::groups::dsl::*;
 use crate::schema::users::dsl::users;
 use crate::StorageState;
-use actix_web::{delete, get, patch, post, web};
+use actix_web::web;
 use diesel::prelude::*;
 use diesel::{QueryDsl, RunQueryDsl, SelectableHelper};
-use log::error;
 use serde::{Deserialize, Serialize};
 
 pub(crate) async fn create_group(
@@ -83,8 +81,8 @@ pub(crate) async fn add_user_to_group(
         .filter(crate::schema::users::id.eq(payload.user_id))
         .select(User::as_select())
         .first(&mut *db);
-    let group = groups
-        .filter(id.eq(path_data))
+    let group = crate::schema::groups::dsl::groups
+        .filter(crate::schema::groups::dsl::id.eq(path_data))
         .select(Group::as_select())
         .first(&mut *db);
     match (user, group) {

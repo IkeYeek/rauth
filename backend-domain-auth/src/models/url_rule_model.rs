@@ -44,17 +44,17 @@ impl URLRule {
     }
 
     pub(crate) fn get(db: &mut SqliteConnection, rule_id: i32) -> Result<URLRule, ApiError> {
-        Ok(crate::schema::url_rules::dsl::url_rules
+        crate::schema::url_rules::dsl::url_rules
             .filter(crate::schema::url_rules::dsl::id.eq(rule_id))
             .get_result::<URLRule>(db)
-            .map_err(|_| ApiError::Internal)?)
+            .map_err(|_| ApiError::Internal)
     }
 
     pub(crate) fn get_all(db: &mut SqliteConnection) -> Result<Vec<URLRule>, ApiError> {
-        Ok(crate::schema::url_rules::dsl::url_rules
+        crate::schema::url_rules::dsl::url_rules
             .select(URLRule::as_select())
             .load(db)
-            .map_err(|_| ApiError::Internal)?)
+            .map_err(|_| ApiError::Internal)
     }
 
     pub(crate) fn delete(db: &mut SqliteConnection, url_rule_id: i32) -> Result<(), ApiError> {
@@ -71,22 +71,22 @@ impl URLRule {
     }
 
     pub(crate) fn for_url(db: &mut SqliteConnection, url: &str) -> Result<Vec<URLRule>, ApiError> {
-        Ok(crate::schema::url_rules::dsl::url_rules
+        crate::schema::url_rules::dsl::url_rules
             .filter(crate::schema::url_rules::dsl::url.eq(url))
             .select(URLRule::as_select())
             .load(db)
-            .map_err(|_| ApiError::Internal)?)
+            .map_err(|_| ApiError::Internal)
     }
 
     pub(crate) fn for_group(
         db: &mut SqliteConnection,
         group: &Group,
     ) -> Result<Vec<URLRule>, ApiError> {
-        Ok(crate::schema::url_rules::dsl::url_rules
+        crate::schema::url_rules::dsl::url_rules
             .filter(crate::schema::url_rules::dsl::group_id.eq(group.id))
             .select(URLRule::as_select())
             .load(db)
-            .map_err(|_| ApiError::Internal)?)
+            .map_err(|_| ApiError::Internal)
     }
 
     pub(crate) fn for_user(

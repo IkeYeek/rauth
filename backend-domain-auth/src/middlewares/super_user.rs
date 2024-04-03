@@ -2,7 +2,7 @@ use crate::api_error::ApiError;
 use crate::models::jwt_model::Claims;
 use crate::models::role_model::Role;
 use actix_web::dev::{Service, ServiceRequest, ServiceResponse, Transform};
-use actix_web::{Handler, HttpMessage};
+use actix_web::HttpMessage;
 use futures::future::LocalBoxFuture;
 use std::future::{ready, Ready};
 use std::rc::Rc;
@@ -30,13 +30,10 @@ where
 
     fn call(&self, req: ServiceRequest) -> Self::Future {
         let binding = req.extensions();
-        let claims = match binding.get::<Claims>() {
-            Some(claims) => claims,
-            None => return Box::pin(ready(Err(actix_web::Error::from(ApiError::JWT)))),
-        };
+        let Some(claims) = binding.get::<Claims>() else { return Box::pin(ready(Err(actix_web::Error::from(ApiError::Jwt)))) };
         let is_super = match Role::superior_to(
-            claims.clone().role,
-            match Role::from("user") {
+            &claims.clone().role,
+            &match Role::from("user") {
                 Ok(r) => r,
                 Err(e) => return Box::pin(ready(Err(actix_web::Error::from(e)))),
             },
@@ -45,18 +42,19 @@ where
             Err(e) => return Box::pin(ready(Err(actix_web::Error::from(e)))),
         };
         drop(binding);
-        return if is_super {
+        if is_super {
             let srv = self.service.clone();
             Box::pin(async move {
-                let res = srv.call(req).await?;
-                Ok(res)
+                let resp = srv.call(req).await?;
+                Ok(resp)
             })
         } else {
-            Box::pin(ready(Err(actix_web::Error::from(ApiError::JWT))))
-        };
+            Box::pin(ready(Err(actix_web::Error::from(ApiError::Jwt))))
+        }
     }
 }
 
+#[allow(clippy::module_name_repetitions)]
 pub struct RequireSuperUser;
 
 impl<S> Transform<S, ServiceRequest> for RequireSuperUser

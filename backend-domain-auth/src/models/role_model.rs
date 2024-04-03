@@ -8,14 +8,14 @@ pub(crate) struct Role {
 
 impl Role {
     /// checking if role a > role b
-    pub(crate) fn superior_to(a: Role, b: Role) -> Result<bool, ApiError> {
+    pub(crate) fn superior_to(compare: &Role, to: &Role) -> Result<bool, ApiError> {
         let hierarchy = ["root", "super", "user", "visitor"];
         match (
-            hierarchy.iter().position(|&r| r == a.role),
-            hierarchy.iter().position(|&r| r == b.role),
+            hierarchy.iter().position(|&r| r == compare.role),
+            hierarchy.iter().position(|&r| r == to.role),
         ) {
-            (Some(pos_a_in_hierarchy), Some(pos_b_in_hierarchy)) => {
-                Ok(pos_a_in_hierarchy < pos_b_in_hierarchy)
+            (Some(pos_compare_in_hierarchy), Some(pos_to_in_hierarchy)) => {
+                Ok(pos_compare_in_hierarchy < pos_to_in_hierarchy)
             }
             _ => Err(ApiError::Internal),
         }

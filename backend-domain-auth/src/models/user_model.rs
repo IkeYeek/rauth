@@ -37,7 +37,7 @@ pub(crate) struct User {
 
 impl User {
     pub(crate) fn create(db: &mut SqliteConnection, u: &NewUser) -> Result<User, ApiError> {
-        match insert_into(users).values(&*u).get_results::<User>(db) {
+        match insert_into(users).values(u).get_results::<User>(db) {
             Ok(mut res) => match res.pop() {
                 Some(created_user) => {
                     RoleUser::add_role_to_user(
@@ -81,12 +81,12 @@ impl User {
         user_login: &str,
         user_hash: &str,
     ) -> Result<User, ApiError> {
-        Ok(users
+        users
             .filter(login.eq(user_login))
             .filter(hash.eq(user_hash))
             .select(User::as_select())
             .first(db)
-            .map_err(|_| ApiError::User)?)
+            .map_err(|_| ApiError::User)
     }
 
     pub(crate) fn update_user(db: &mut SqliteConnection, user: &User) -> Result<(), ApiError> {

@@ -1,12 +1,10 @@
 use crate::api_error::ApiError;
 use crate::models::group_user_model::GroupUser;
 use crate::models::user_model::User;
-use crate::schema::*;
-use actix_web::get;
 use diesel::result::{DatabaseErrorKind, Error as DieselError};
 use diesel::{
-    insert_into, AsChangeset, AsExpression, Identifiable, Insertable, QueryDsl, Queryable,
-    RunQueryDsl, Selectable, SelectableHelper, SqliteConnection,
+    insert_into, AsChangeset, Identifiable, Insertable, QueryDsl, Queryable, RunQueryDsl,
+    Selectable, SelectableHelper, SqliteConnection,
 };
 use diesel::{BelongingToDsl, ExpressionMethods, JoinOnDsl};
 use log::error;
@@ -32,8 +30,8 @@ pub(crate) struct Group {
 
 impl Group {
     pub(crate) fn create_group(db: &mut SqliteConnection, g: &NewGroup) -> Result<Group, ApiError> {
-        match insert_into(groups::dsl::groups)
-            .values(&*g)
+        match insert_into(crate::schema::groups::dsl::groups)
+            .values(g)
             .get_results::<Group>(db)
         {
             Ok(mut res) => match res.pop() {
@@ -57,8 +55,8 @@ impl Group {
     }
 
     pub(crate) fn read_by_id(db: &mut SqliteConnection, group_id: i32) -> Result<Group, ApiError> {
-        match groups::dsl::groups
-            .filter(groups::dsl::id.eq(group_id))
+        match crate::schema::groups::dsl::groups
+            .filter(crate::schema::groups::dsl::id.eq(group_id))
             .select(Group::as_select())
             .first(db)
         {
@@ -72,8 +70,8 @@ impl Group {
     }
 
     pub(crate) fn update_group(db: &mut SqliteConnection, group: &Group) -> Result<(), ApiError> {
-        match diesel::update(groups::dsl::groups)
-            .filter(groups::dsl::id.eq(group.id))
+        match diesel::update(crate::schema::groups::dsl::groups)
+            .filter(crate::schema::groups::dsl::id.eq(group.id))
             .set(group)
             .execute(&mut *db)
         {
@@ -111,7 +109,7 @@ impl Group {
             .iter()
             .try_for_each(|user| GroupUser::remove_user_from_group(db, user, group))?;
 
-        match diesel::delete(groups::dsl::groups.filter(groups::dsl::id.eq(group.id))).execute(db) {
+        match diesel::delete(crate::schema::groups::dsl::groups.filter(crate::schema::groups::dsl::id.eq(group.id))).execute(db) {
             Ok(_) => Ok(()),
             Err(_) => Err(ApiError::Internal),
         }
@@ -119,7 +117,7 @@ impl Group {
 }
 
 #[derive(Insertable, Serialize, Deserialize, Debug)]
-#[diesel(table_name = groups)]
+#[diesel(table_name = crate::schema::groups)]
 pub struct NewGroup {
     pub(crate) name: String,
 }
