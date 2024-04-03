@@ -1,4 +1,6 @@
 use crate::middlewares::authentication_middleware::RequireAuth;
+use crate::middlewares::super_user::RequireSuperUser;
+use crate::middlewares::target_user_or_super_user_middleware::TargetUserOrSuperUser;
 use crate::routes::auth_routes::{auth, has_access, is_auth};
 use crate::routes::group_routes::{
     add_user_to_group, all_groups, create_group, delete_group, delete_user_from_group,
@@ -19,7 +21,6 @@ use env_logger::Env;
 use jsonwebtoken::{DecodingKey, EncodingKey};
 use std::env;
 use std::sync::Mutex;
-use crate::middlewares::super_user::RequireSuperUser;
 
 pub(crate) mod api_error;
 pub(crate) mod helpers;
@@ -77,12 +78,15 @@ async fn main() -> std::io::Result<()> {
                     .service(
                         web::scope("/users")
                             .service(
-                                web::resource("/").wrap(RequireSuperUser)
+                                web::resource("/")
+                                    .wrap(RequireSuperUser)
+                                    .wrap(RequireSuperUser)
                                     .route(web::get().to(all_users))
                                     .route(web::post().to(create_user)),
                             )
                             .service(
                                 web::scope("/{user}")
+                                    .wrap(TargetUserOrSuperUser)
                                     .service(
                                         web::resource("/")
                                             .route(web::get().to(one_user))
@@ -97,6 +101,7 @@ async fn main() -> std::io::Result<()> {
                     )
                     .service(
                         web::scope("/groups")
+                            .wrap(RequireSuperUser)
                             .service(
                                 web::resource("/")
                                     .route(web::get().to(all_groups))
@@ -120,6 +125,7 @@ async fn main() -> std::io::Result<()> {
                     )
                     .service(
                         web::scope("/rules")
+                            .wrap(RequireSuperUser)
                             .service(
                                 web::scope("/domain")
                                     .service(
@@ -137,6 +143,7 @@ async fn main() -> std::io::Result<()> {
                             )
                             .service(
                                 web::scope("/url")
+                                    .wrap(RequireSuperUser)
                                     .service(
                                         web::resource("/")
                                             .route(web::post().to(add_url_rule))

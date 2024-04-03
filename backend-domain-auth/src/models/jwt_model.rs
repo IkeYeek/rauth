@@ -74,10 +74,10 @@ struct JWT {
 }
 
 impl JWTInternal {
-    pub(crate) fn from(claims: Claims, key: &EncodingKey) -> Result<Self, ApiError> {
+    pub(crate) fn from(claims: &Claims, key: &EncodingKey) -> Result<Self, ApiError> {
         let token = encode(&Header::new(Algorithm::EdDSA), &claims, key);
         if let Ok(token) = token {
-            return Ok(JWTInternal { token, claims });
+            return Ok(JWTInternal { token, claims: claims.clone() });
         };
         return Err(ApiError::Internal);
     }
@@ -95,7 +95,7 @@ impl JWTInternal {
             role: RoleUser::roles_from_user(db, &user)?,
             groups: User::get_groups(db, &user)?,
         };
-        Ok(Self::from(claims, key)?)
+        Ok(Self::from(&claims, key)?)
     }
     pub(crate) fn needs_refresh(
         db: &mut SqliteConnection,

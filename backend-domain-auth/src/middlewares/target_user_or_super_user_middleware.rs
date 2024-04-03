@@ -4,15 +4,17 @@ use crate::models::role_model::Role;
 use actix_web::dev::{Service, ServiceRequest, ServiceResponse, Transform};
 use actix_web::{Handler, HttpMessage};
 use futures::future::LocalBoxFuture;
+use futures::FutureExt;
+use log::error;
 use std::future::{ready, Ready};
 use std::rc::Rc;
 use std::task::{Context, Poll};
 
-pub struct RequireSuperUserMiddleware<S> {
+pub struct TargetUserOrSuperUserMiddleware<S> {
     service: Rc<S>,
 }
 
-impl<S> Service<ServiceRequest> for RequireSuperUserMiddleware<S>
+impl<S> Service<ServiceRequest> for TargetUserOrSuperUserMiddleware<S>
 where
     S: Service<
             ServiceRequest,
@@ -31,11 +33,35 @@ where
     fn call(&self, req: ServiceRequest) -> Self::Future {
         let binding = req.extensions();
         let claims = match binding.get::<Claims>() {
-            Some(claims) => claims,
+            Some(claims) => claims.clone(),
             None => return Box::pin(ready(Err(actix_web::Error::from(ApiError::JWT)))),
         };
+        let pattern_path_split = match req.match_pattern() {
+            Some(path) => path
+                .split("/")
+                .map(|s| s.to_string())
+                .collect::<Vec<String>>(),
+            None => return Box::pin(ready(Err(actix_web::Error::from(ApiError::Internal)))),
+        };
+        let uri_path_split = req.path().split("/").collect::<Vec<&str>>();
+        let user_pos_in_pattern = match pattern_path_split.iter().position(|elem| *elem == "{user}")
+        {
+            Some(pos) => pos,
+            None => return Box::pin(ready(Err(actix_web::Error::from(ApiError::Internal)))),
+        };
+        let user_id = match uri_path_split.get(user_pos_in_pattern) {
+            Some(raw_user_id) => match raw_user_id.parse::<i32>() {
+                Ok(user_id) => user_id,
+                Err(e) => {
+                    error!("{e:?}");
+                    return Box::pin(ready(Err(actix_web::Error::from(ApiError::Internal))));
+                }
+            },
+            None => return Box::pin(ready(Err(actix_web::Error::from(ApiError::Internal)))),
+        };
+        let claims = claims.clone();
         let is_super = match Role::superior_to(
-            claims.clone().role,
+            claims.role,
             match Role::from("user") {
                 Ok(r) => r,
                 Err(e) => return Box::pin(ready(Err(actix_web::Error::from(e)))),
@@ -45,21 +71,23 @@ where
             Err(e) => return Box::pin(ready(Err(actix_web::Error::from(e)))),
         };
         drop(binding);
-        return if is_super {
+        let is_user = claims.user.id == user_id;
+        return if is_super || is_user {
             let srv = self.service.clone();
-            Box::pin(async move {
+            async move {
                 let res = srv.call(req).await?;
                 Ok(res)
-            })
+            }
+            .boxed_local()
         } else {
-            Box::pin(ready(Err(actix_web::Error::from(ApiError::JWT))))
+            return Box::pin(ready(Err(actix_web::Error::from(ApiError::JWT))));
         };
     }
 }
 
-pub struct RequireSuperUser;
+pub struct TargetUserOrSuperUser;
 
-impl<S> Transform<S, ServiceRequest> for RequireSuperUser
+impl<S> Transform<S, ServiceRequest> for TargetUserOrSuperUser
 where
     S: Service<
             ServiceRequest,
@@ -69,12 +97,12 @@ where
 {
     type Response = ServiceResponse<actix_web::body::BoxBody>;
     type Error = actix_web::Error;
-    type Transform = RequireSuperUserMiddleware<S>;
+    type Transform = TargetUserOrSuperUserMiddleware<S>;
     type InitError = ();
     type Future = Ready<Result<Self::Transform, Self::InitError>>;
 
     fn new_transform(&self, service: S) -> Self::Future {
-        ready(Ok(RequireSuperUserMiddleware {
+        ready(Ok(TargetUserOrSuperUserMiddleware {
             service: Rc::new(service),
         }))
     }
