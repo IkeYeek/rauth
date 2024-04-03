@@ -6,7 +6,11 @@ use crate::routes::group_routes::{
     add_user_to_group, all_groups, create_group, delete_group, delete_user_from_group,
     list_users_from_group, one_group, update_group,
 };
-use crate::routes::rules_routes::{add_domain_rule, add_url_rule, delete_domain_rule, delete_url_rule, domain_rule, domain_rules_for_domain, domain_rules_for_group, domain_rules_for_user, list_domain_rules, list_url_rules, url_rule, url_rules_for_group, url_rules_for_url, url_rules_for_user};
+use crate::routes::rules_routes::{
+    add_domain_rule, add_url_rule, delete_domain_rule, delete_url_rule, domain_rule,
+    domain_rules_for_domain, domain_rules_for_group, domain_rules_for_user, list_domain_rules,
+    list_url_rules, url_rule, url_rules_for_group, url_rules_for_url, url_rules_for_user,
+};
 use crate::routes::user_routes::{
     all_users, create_user, delete_user, get_user_groups, one_user, update_user,
 };

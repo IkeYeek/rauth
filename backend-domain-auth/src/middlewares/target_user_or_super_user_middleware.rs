@@ -44,7 +44,11 @@ where
             None => return Box::pin(ready(Err(actix_web::Error::from(ApiError::Internal)))),
         };
         let uri_path_split = req.path().split('/').collect::<Vec<&str>>();
-        let Some(user_pos_in_pattern) = pattern_path_split.iter().position(|elem| *elem == "{user}") else { return Box::pin(ready(Err(actix_web::Error::from(ApiError::Internal)))) };
+        let Some(user_pos_in_pattern) =
+            pattern_path_split.iter().position(|elem| *elem == "{user}")
+        else {
+            return Box::pin(ready(Err(actix_web::Error::from(ApiError::Internal))));
+        };
         let user_id = match uri_path_split.get(user_pos_in_pattern) {
             Some(raw_user_id) => match raw_user_id.parse::<i32>() {
                 Ok(user_id) => user_id,

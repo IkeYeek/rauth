@@ -109,7 +109,11 @@ impl Group {
             .iter()
             .try_for_each(|user| GroupUser::remove_user_from_group(db, user, group))?;
 
-        match diesel::delete(crate::schema::groups::dsl::groups.filter(crate::schema::groups::dsl::id.eq(group.id))).execute(db) {
+        match diesel::delete(
+            crate::schema::groups::dsl::groups.filter(crate::schema::groups::dsl::id.eq(group.id)),
+        )
+        .execute(db)
+        {
             Ok(_) => Ok(()),
             Err(_) => Err(ApiError::Internal),
         }

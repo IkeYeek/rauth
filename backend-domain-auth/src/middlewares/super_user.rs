@@ -30,7 +30,9 @@ where
 
     fn call(&self, req: ServiceRequest) -> Self::Future {
         let binding = req.extensions();
-        let Some(claims) = binding.get::<Claims>() else { return Box::pin(ready(Err(actix_web::Error::from(ApiError::Jwt)))) };
+        let Some(claims) = binding.get::<Claims>() else {
+            return Box::pin(ready(Err(actix_web::Error::from(ApiError::Jwt))));
+        };
         let is_super = match Role::superior_to(
             &claims.clone().role,
             &match Role::from("user") {

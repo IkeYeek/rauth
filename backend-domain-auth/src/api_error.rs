@@ -34,7 +34,8 @@ pub enum ApiError {
 impl ResponseError for ApiError {
     fn status_code(&self) -> StatusCode {
         match *self {
-            ApiError::GroupCreation | ApiError::Role
+            ApiError::GroupCreation
+            | ApiError::Role
             | ApiError::Group
             | ApiError::DomainRule
             | ApiError::URLRule

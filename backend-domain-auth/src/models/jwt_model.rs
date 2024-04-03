@@ -71,7 +71,7 @@ impl JWTInternal {
             .count()
             .get_result::<i64>(db)
         {
-            Ok(res) =>  Ok(res > 0),
+            Ok(res) => Ok(res > 0),
             Err(e) => {
                 error!("{e:?}");
                 Err(ApiError::Internal)

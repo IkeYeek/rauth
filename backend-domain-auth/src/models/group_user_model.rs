@@ -83,7 +83,8 @@ impl GroupUser {
         match crate::schema::domain_rules::dsl::domain_rules
             .left_join(
                 crate::schema::url_rules::dsl::url_rules
-                    .on(crate::schema::domain_rules::dsl::group_id.eq(crate::schema::url_rules::dsl::group_id)),
+                    .on(crate::schema::domain_rules::dsl::group_id
+                        .eq(crate::schema::url_rules::dsl::group_id)),
             )
             .filter(
                 crate::schema::domain_rules::dsl::domain
@@ -98,7 +99,13 @@ impl GroupUser {
             .count()
             .get_result::<i64>(&mut *db)
         {
-            Ok(n) => if n > 0 { Ok(()) } else { Err(ApiError::Group) },
+            Ok(n) => {
+                if n > 0 {
+                    Ok(())
+                } else {
+                    Err(ApiError::Group)
+                }
+            }
             Err(e) => {
                 error!("{e:?}");
                 Err(ApiError::Internal)

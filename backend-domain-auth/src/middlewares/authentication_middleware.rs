@@ -34,18 +34,19 @@ where
     }
 
     fn call(&self, req: ServiceRequest) -> Self::Future {
-        let mut db = if let Some(storage) = req.app_data::<web::Data<StorageState>>() { match try_get_connection(storage) {
-             Ok(db) => db,
-             Err(e) => return Box::pin(ready(Err(actix_web::Error::from(e)))),
-         } } else {
-             error!("couldn't access storage");
-             return Box::pin(ready(Err(actix_web::Error::from(ApiError::Internal))));
+        let mut db = if let Some(storage) = req.app_data::<web::Data<StorageState>>() {
+            match try_get_connection(storage) {
+                Ok(db) => db,
+                Err(e) => return Box::pin(ready(Err(actix_web::Error::from(e)))),
+            }
+        } else {
+            error!("couldn't access storage");
+            return Box::pin(ready(Err(actix_web::Error::from(ApiError::Internal))));
         };
         let Some(key_set) = req.app_data::<web::Data<KeySet>>() else {
-              error!("couldn't access key set");
-              return Box::pin(ready(Err(actix_web::Error::from(ApiError::Internal))));
-         };
-
+            error!("couldn't access key set");
+            return Box::pin(ready(Err(actix_web::Error::from(ApiError::Internal))));
+        };
 
         let token = match req.cookie("jwt") {
             Some(auth) => auth.value().to_string(),

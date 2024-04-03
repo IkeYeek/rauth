@@ -51,10 +51,7 @@ pub(crate) async fn domain_rules_for_domain(
     payload: web::Json<PayloadDomainRulesForDomain>,
 ) -> Result<web::Json<Vec<DomainRule>>, ApiError> {
     let mut db = try_get_connection(&db)?;
-    Ok(web::Json(DomainRule::for_domain(
-        &mut db,
-        &payload.domain,
-    )?))
+    Ok(web::Json(DomainRule::for_domain(&mut db, &payload.domain)?))
 }
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PayloadDomainRulesForGroup {
