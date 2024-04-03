@@ -2,6 +2,8 @@ use crate::api_error::ApiError;
 use crate::helpers::try_get_connection;
 use crate::models::jwt_model::{Claims, JWTInternal};
 use crate::{KeySet, StorageState};
+use actix_web::cookie::time::Duration;
+use actix_web::cookie::Cookie;
 use actix_web::dev::{Service, ServiceRequest, ServiceResponse, Transform};
 use actix_web::{web, Handler, HttpMessage};
 use futures::future::LocalBoxFuture;
@@ -11,8 +13,6 @@ use std::future::{ready, Ready};
 use std::io::Error;
 use std::rc::Rc;
 use std::task::{Context, Poll};
-use actix_web::cookie::Cookie;
-use actix_web::cookie::time::Duration;
 
 pub struct AuthenticationMiddleware<S> {
     service: Rc<S>,
@@ -70,18 +70,25 @@ where
                             refresh_cookie = true;
                         }
                         needs_refresh
-                    },
+                    }
                     Err(e) => {
                         error!("{e:?}");
                         return Box::pin(ready(Err(actix_web::Error::from(e))));
                     }
                 };
                 if needs_refresh {
-                    match JWTInternal::refresh(&mut *db, &claims.user, &claims.jti, &key_set.encoding) {
-                        Ok(refresh) => {
-                            match JWTInternal::register(&mut *db, &refresh) {
-                                Ok(()) => refresh,
-                                Err(e) => return Box::pin(ready(Err(actix_web::Error::from(ApiError::Internal)))),
+                    match JWTInternal::refresh(
+                        &mut *db,
+                        &claims.user,
+                        &claims.jti,
+                        &key_set.encoding,
+                    ) {
+                        Ok(refresh) => match JWTInternal::register(&mut *db, &refresh) {
+                            Ok(()) => refresh,
+                            Err(e) => {
+                                return Box::pin(ready(Err(actix_web::Error::from(
+                                    ApiError::Internal,
+                                ))))
                             }
                         },
                         Err(e) => return Box::pin(ready(Err(actix_web::Error::from(e)))),
@@ -92,7 +99,7 @@ where
                         Err(e) => return Box::pin(ready(Err(actix_web::Error::from(e)))),
                     }
                 }
-            },
+            }
             Err(e) => return Box::pin(ready(Err(actix_web::Error::from(e)))),
         };
         drop(db);

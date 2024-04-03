@@ -77,7 +77,10 @@ impl JWTInternal {
     pub(crate) fn from(claims: &Claims, key: &EncodingKey) -> Result<Self, ApiError> {
         let token = encode(&Header::new(Algorithm::EdDSA), &claims, key);
         if let Ok(token) = token {
-            return Ok(JWTInternal { token, claims: claims.clone() });
+            return Ok(JWTInternal {
+                token,
+                claims: claims.clone(),
+            });
         };
         return Err(ApiError::Internal);
     }

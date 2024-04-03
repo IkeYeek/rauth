@@ -80,7 +80,6 @@ async fn main() -> std::io::Result<()> {
                             .service(
                                 web::resource("/")
                                     .wrap(RequireSuperUser)
-                                    .wrap(RequireSuperUser)
                                     .route(web::get().to(all_users))
                                     .route(web::post().to(create_user)),
                             )
