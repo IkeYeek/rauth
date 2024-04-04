@@ -7,9 +7,12 @@ use crate::{KeySet, StorageState};
 use actix_web::cookie::time::Duration;
 use actix_web::cookie::Cookie;
 use actix_web::{web, HttpRequest, HttpResponse};
-use log::error;
+use futures::future::err;
+use log::{error, info};
 use serde::{Deserialize, Serialize};
 use url::Url;
+use crate::models::group_model::Groups;
+use crate::models::role_model::Role;
 
 #[derive(Serialize, Deserialize)]
 pub(crate) struct AuthPayload {
@@ -47,44 +50,27 @@ pub(crate) async fn has_access(
     request: HttpRequest,
     db: web::Data<StorageState>,
     access_data: web::Query<AccessQS>,
-    key_set: web::Data<KeySet>,
+    role: Role,
+    groups: Groups
 ) -> Result<HttpResponse, ApiError> {
     let mut db = try_get_connection(&db)?;
-    match (Url::parse(&access_data.origin), request.cookie("jwt")) {
-        (Ok(parsed_url), Some(user_jwt)) => {
-            let mut res = HttpResponse::Ok().body("granted");
-            let req_jwt = JWTInternal::validate_jwt(&mut db, user_jwt.value(), &key_set.decoding)?;
-            if JWTInternal::needs_refresh(&mut db, &req_jwt)? {
-                let refresh_token =
-                    JWTInternal::refresh(&mut db, &req_jwt.user, &req_jwt.jti, &key_set.encoding)?;
-                let jwt_cookie = Cookie::build("jwt", &refresh_token.token)
-                    .domain(".localhost.dummy")
-                    .max_age(Duration::weeks(1))
-                    .finish();
-                if let Err(e) = res.add_cookie(&jwt_cookie) {
-                    error!("{e:?}");
-                    return Err(ApiError::Internal);
-                }
-            }
+    if role == Role::from("root").unwrap() {
+        return Ok(HttpResponse::Ok().body("granted my dear looord"))
+    }
+    match Url::parse(&access_data.origin) {
+        Ok(parsed_url) => {
             match parsed_url.host_str() {
                 Some(origin_host) => {
-                    if req_jwt.role.role == "root" {
-                        return Ok(res);
-                    }
-                    let group_ids: Vec<i32> = req_jwt.groups.iter().map(|g| g.id).collect();
-
-                    GroupUser::user_allowed_to_origin(
-                        &mut db,
-                        &access_data.origin,
-                        origin_host,
-                        &group_ids,
-                    )?;
-                    Ok(res)
-                }
-                None => Err(ApiError::Jwt),
+                    GroupUser::user_allowed_to_origin(&mut *db, &access_data.origin, origin_host, &groups.0.iter().map(|g| g.id).collect::<Vec<i32>>())?;
+                    Ok(HttpResponse::Ok().body("granted"))
+                },
+                None => return Err(ApiError::Internal)
             }
-        }
-        _ => Err(ApiError::Jwt),
+        },
+        Err(e) => {
+            info!("bad api usage {e:?} - {:?}", access_data.origin);
+            return Err(ApiError::User)
+        },
     }
 }
 

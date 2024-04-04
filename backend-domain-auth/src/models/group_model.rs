@@ -1,3 +1,7 @@
+use std::future::{Future, ready};
+use std::pin::Pin;
+use actix_web::{FromRequest, HttpRequest, web};
+use actix_web::dev::Payload;
 use crate::api_error::ApiError;
 use crate::models::group_user_model::GroupUser;
 use crate::models::user_model::User;
@@ -7,8 +11,12 @@ use diesel::{
     Selectable, SelectableHelper, SqliteConnection,
 };
 use diesel::{BelongingToDsl, ExpressionMethods, JoinOnDsl};
+use futures::future::{err, ok};
 use log::error;
 use serde::{Deserialize, Serialize};
+use crate::helpers::try_get_connection;
+use crate::models::jwt_model::JWTInternal;
+use crate::{KeySet, StorageState};
 
 #[derive(
     Identifiable,
@@ -119,6 +127,77 @@ impl Group {
         }
     }
 }
+#[derive(Debug)]
+pub(crate) struct Groups(pub(crate) Vec<Group>);
+
+impl FromRequest for Groups {
+    type Error = ApiError;
+    type Future =  Pin<Box<dyn Future<Output = Result<Self, Self::Error>>>>;
+
+    fn from_request(req: &HttpRequest, payload: &mut Payload) -> Self::Future {
+        let mut db = if let Some(storage) = req.app_data::<web::Data<StorageState>>() {
+            match try_get_connection(storage) {
+                Ok(db) => db,
+                Err(e) => return Box::pin(ready(Err(e))),
+            }
+        } else {
+            error!("couldn't access storage");
+            return Box::pin(ready(Err(ApiError::Internal)));
+        };
+        let Some(key_set) = req.app_data::<web::Data<KeySet>>() else {
+            error!("couldn't access key set");
+            return Box::pin(ready(Err(ApiError::Internal)));
+        };
+        let mut refresh_cookie = false;
+        let req = req.clone();
+        match req.cookie("jwt") {
+            Some(jwt) => {
+                let claims = match JWTInternal::validate_jwt(&mut db, &jwt.value(), &key_set.decoding) {
+                    Ok(claims) => {
+                        let needs_refresh = match JWTInternal::needs_refresh(&mut db, &claims) {
+                            Ok(needs_refresh) => {
+                                if needs_refresh {
+                                    refresh_cookie = true;
+                                }
+                                needs_refresh
+                            }
+                            Err(e) => {
+                                error!("{e:?}");
+                                return Box::pin(ready(Err(e)));
+                            }
+                        };
+                        if needs_refresh {
+                            match JWTInternal::refresh(
+                                &mut db,
+                                &claims.user,
+                                &claims.jti,
+                                &key_set.encoding,
+                            ) {
+                                Ok(refresh) => match JWTInternal::register(&mut db, &refresh) {
+                                    Ok(()) => refresh,
+                                    Err(e) => return Box::pin(ready(Err(e))),
+                                },
+                                Err(e) => return Box::pin(ready(Err(e))),
+                            }
+                        } else {
+                            match JWTInternal::from(&claims, &key_set.encoding) {
+                                Ok(token) => token,
+                                Err(e) => return Box::pin(ready(Err(e))),
+                            }
+                        }
+                    }
+                    Err(e) => return Box::pin(ready(Err(e))),
+                };
+                return Box::pin(ok(Groups(claims.claims.groups)));
+            },
+            None => return Box::pin(ok(Groups(vec!(Group {
+                id: 1,
+                name: "public".to_string()
+            }))))  // TODO make this cleaner
+        }
+    }
+}
+
 
 #[derive(Insertable, Serialize, Deserialize, Debug)]
 #[diesel(table_name = crate::schema::groups)]
