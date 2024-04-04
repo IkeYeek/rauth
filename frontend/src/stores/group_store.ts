@@ -1,9 +1,7 @@
 import {defineStore} from "pinia";
 import {useAuthStore} from "@/stores/auth_store";
-import {NotAuthenticated, NotAuthorized} from "@/errors/auth_errors";
 import {useEnvStore} from "@/stores/env_store";
-import axios from "axios";
-import {ApiError} from "@/errors/api_errors";
+import {ApiService} from "@/helpers/api_service";
 type Group = {
     id: number;
     name: string;
@@ -11,73 +9,60 @@ type Group = {
 type NewGroup = {
     name: String;
 }
+type GroupUpdate = {
+    new_name: String;
+}
+type AddGroupPayload = {
+    user_id: number,
+}
+type User = {
+    id: number;
+    login: string;
+    hash: string;
+}
 export const useGroupStore = defineStore("group", () => {
     const auth_store = useAuthStore();
     const env_store = useEnvStore();
     const createGroup = async (to_create: NewGroup): Promise<Group> => {
-        if (await auth_store.isAuth()) {
-            try {
-                const {status, data} = axios.post<Group>(`${env_store.app_base}api/groups/`, to_create, {
-                    validateStatus: (s) => s < 500,
-                    headers: {
-                        Authorization: `Bearer: ${auth_store.getToken()}`
-                    }
-                })
-                if (status === 200) {
-                    return data;
-                }
-            } catch (e) {
-                console.error(e);
-                throw new ApiError();
-            }
-            throw new NotAuthorized();
-        } else {
-            throw new NotAuthenticated();
-        }
+        return await ApiService.makeAuthenticatedApiRequest<Group>("post", "api/groups", to_create);
     }
 
     const getAll = async (): Promise<Array<Group>> => {
-        if (await auth_store.isAuth()) {
-            try {
-                const {status, data} = await axios.get<Array<Group>>(`${env_store.app_base}api/groups`, {
-                    validateStatus: (s) => s < 500,
-                    headers: {
-                        Authorization: `Bearer: ${auth_store.getToken()}`
-                    }
-                });
-                if (status === 200) {
-                    return data;
-                }
-            }
-            catch (e) {
-                console.error(e);
-                throw new ApiError();
-            }
-            throw new NotAuthorized();
-        } else {
-            throw new NotAuthenticated();
-        }
+        return await ApiService.makeAuthenticatedApiRequest<Array<Group>>("get", "api/groups", undefined);
     }
 
     const get = async (id: number): Promise<Group> => {
-        if (await auth_store.isAuth()) {
-            try {
-                const {status, data} = await axios.get<Group>(`${env_store.app_base}api/groups/${id}`, {
-                    validateStatus: (s) => s < 500,
-                    headers: {
-                        Authorization: `Bearer: ${auth_store.getToken()}`
-                    }
-                });
-                if (status === 200) {
-                    return data;
-                }
-            } catch (e) {
-                console.error(e);
-                throw new ApiError();
-            }
-            throw new NotAuthorized();
-        } else {
-            throw new NotAuthenticated();
-        }
+        return await ApiService.makeAuthenticatedApiRequest<Group>("get", `api/groups/${id}`, undefined);
+    }
+
+    const update = async (id: number, new_value: GroupUpdate): Promise<Group> => {
+        return await ApiService.makeAuthenticatedApiRequest<Group>("patch", `api/groups/${id}`, new_value);
+    }
+
+    const remove = async (id: number): Promise<void> => {
+        return await ApiService.makeAuthenticatedApiRequest<void>("delete", `api/groups/${id}`, undefined);
+    }
+
+    const add_user_to = async (id: number, payload: AddGroupPayload): Promise<void> => {
+        return await ApiService.makeAuthenticatedApiRequest<void>("post", `api/groups/${id}/users`, payload);
+    }
+
+    const delete_user_from = async (id: number, payload: AddGroupPayload): Promise<void> => {
+        return await ApiService.makeAuthenticatedApiRequest<void>("delete", `api/groups/${id}/users`, payload);
+    }
+
+    const list_users_from = async (id: number): Promise<Array<User>> => {
+        return await ApiService.makeAuthenticatedApiRequest<Array<User>>("get", `api/groups/${id}/users`, undefined);
+    }
+    
+    return {
+        createGroup,
+        getAll,
+        get,
+        update,
+        remove,
+        add_user_to,
+        delete_user_from,
+        list_users_from,
     }
 });

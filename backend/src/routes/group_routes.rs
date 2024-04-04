@@ -45,7 +45,7 @@ pub(crate) async fn update_group(
     db: web::Data<StorageState>,
     group_update_payload: web::Json<GroupUpdatePayload>,
     path: web::Path<i32>,
-) -> Result<&'static str, ApiError> {
+) -> Result<web::Json<Group>, ApiError> {
     let mut db = try_get_connection(&db)?;
     let uid = path.into_inner();
     let mut group_retrieved = Group::get(&mut db, uid)?;
@@ -53,7 +53,7 @@ pub(crate) async fn update_group(
         group_retrieved.name = new_name;
     };
     Group::update_group(&mut db, &group_retrieved)?;
-    Ok("updated.")
+    Ok(web::Json(group_retrieved))
 }
 
 pub(crate) async fn delete_group(
@@ -110,9 +110,10 @@ pub(crate) async fn delete_user_from_group(
 pub(crate) async fn list_users_from_group(
     db: web::Data<StorageState>,
     path: web::Path<i32>,
-) -> Result<web::Json<Group>, ApiError> {
+) -> Result<web::Json<Vec<User>>, ApiError> {
     let mut db = try_get_connection(&db)?;
     let group_id = path.into_inner();
     let group = Group::get(&mut db, group_id)?;
-    Ok(web::Json(group))
+    let group_users = Group::users_from_group(&mut db, &group)?;
+    Ok(web::Json(group_users))
 }

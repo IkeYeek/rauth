@@ -6,12 +6,14 @@ use actix_web::cookie::time::Duration;
 use actix_web::cookie::Cookie;
 use actix_web::dev::{Service, ServiceRequest, ServiceResponse, Transform};
 use actix_web::{web, HttpMessage};
-use futures::future::LocalBoxFuture;
+use futures::future::{err, LocalBoxFuture};
 use futures::FutureExt;
 use log::error;
 use std::future::{ready, Ready};
 use std::rc::Rc;
 use std::task::{Context, Poll};
+use actix_web::http::header::{HeaderName, HeaderValue};
+use actix_web::web::Header;
 
 pub struct AuthenticationMiddleware<S> {
     service: Rc<S>,
@@ -47,13 +49,22 @@ where
             error!("couldn't access key set");
             return Box::pin(ready(Err(actix_web::Error::from(ApiError::Internal))));
         };
-
-        let token = match req.cookie("jwt") {
+        let token = match req.headers().get("Authorization") {
+            Some(raw_header) => {
+                if let Ok(token) = raw_header.to_str() {
+                    if token.starts_with("Bearer ") {&token[7..token.len()]} else {return Box::pin(ready(Err(actix_web::Error::from(ApiError::Internal))));}
+                } else {
+                    return Box::pin(ready(Err(actix_web::Error::from(ApiError::Jwt))));
+                }
+            }
+            None => return Box::pin(ready(Err(actix_web::Error::from(ApiError::Jwt))))
+        };
+        /*let token = match req.cookie("jwt") {
             Some(auth) => auth.value().to_string(),
             None => {
                 return Box::pin(ready(Err(actix_web::Error::from(ApiError::Jwt))));
             }
-        };
+        };*/
 
         let mut refresh_cookie = false; // booooooh blatant side effect boooooooh
 
@@ -101,13 +112,20 @@ where
             req.extensions_mut().insert::<Claims>(claims.claims);
             let mut resp: ServiceResponse = srv.call(req).await?;
             if refresh_cookie {
-                let jwt_cookie = Cookie::build("jwt", &claims.token)
+                resp.headers_mut().insert(HeaderName::from_static("X-Refresh-Token"), match HeaderValue::from_str(&claims.token) {
+                    Ok(v) => v,
+                    Err(e) => {
+                        error!("{e:?}");
+                        return Err(actix_web::Error::from(ApiError::Internal))
+                    }
+                });
+                /*let jwt_cookie = Cookie::build("jwt", &claims.token)
                     .domain(".localhost.dummy")
                     .max_age(Duration::weeks(1))
                     .finish();
                 if let Err(e) = resp.response_mut().add_cookie(&jwt_cookie) {
                     return Err(actix_web::Error::from(e));
-                }
+                }*/
             }
             Ok(resp)
         }

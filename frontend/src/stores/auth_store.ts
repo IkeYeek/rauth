@@ -40,18 +40,24 @@ export const useAuthStore = defineStore('auth', () => {
     const isAuth = async (): Promise<boolean> => {
         const token = getToken();
         if (token === null) return false;
-        const {status} = await axios.get(`${api_base}auth/`, {
-            headers: {
-                Authorization: `Bearer: ${getToken()}`
-            },
-            validateStatus: (s) => s < 500,
-        });
-        return status === 200;
+        try {
+            const {status} = await axios.get(`${api_base}auth/`, {
+                headers: {
+                    Authorization: `Bearer ${getToken()}`
+                },
+                validateStatus: (s) => s < 500,
+            });
+            return status === 200;
+        } catch (e) {
+            console.error(e);
+            throw new ApiError();
+        }
     }
 
     return {
         tryAuth,
         isAuth,
         getToken,
+        setToken,
     }
 })

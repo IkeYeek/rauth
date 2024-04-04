@@ -35,7 +35,7 @@ pub(crate) async fn auth(
         .domain(".localhost.dummy")
         .max_age(Duration::weeks(1))
         .finish();*/
-    let mut response = HttpResponse::Ok().json(AuthResponse {
+    let response = HttpResponse::Ok().json(AuthResponse {
         jwt: new_jwt.token,
     });
     Ok(response)
