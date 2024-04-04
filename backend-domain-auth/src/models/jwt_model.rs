@@ -96,9 +96,12 @@ impl JWTInternal {
         user: &User,
         jti: &str,
         key: &EncodingKey,
+        delete: bool,
     ) -> Result<JWTInternal, ApiError> {
         let refreshed_jwt = JWTInternal::create(db, user, key)?;
-        JWTInternal::delete(db, jti)?;
+        if delete {
+            JWTInternal::delete(db, jti)?;
+        }
         Ok(refreshed_jwt)
     }
 

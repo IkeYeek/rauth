@@ -1,18 +1,17 @@
 use crate::api_error::ApiError;
 use crate::helpers::try_get_connection;
+use crate::models::group_model::Groups;
 use crate::models::group_user_model::GroupUser;
 use crate::models::jwt_model::JWTInternal;
+use crate::models::role_model::Role;
 use crate::models::user_model::User;
 use crate::{KeySet, StorageState};
 use actix_web::cookie::time::Duration;
 use actix_web::cookie::Cookie;
 use actix_web::{web, HttpRequest, HttpResponse};
-use futures::future::err;
 use log::{error, info};
 use serde::{Deserialize, Serialize};
 use url::Url;
-use crate::models::group_model::Groups;
-use crate::models::role_model::Role;
 
 #[derive(Serialize, Deserialize)]
 pub(crate) struct AuthPayload {
@@ -47,30 +46,32 @@ pub(crate) struct AccessQS {
     origin: String,
 }
 pub(crate) async fn has_access(
-    request: HttpRequest,
     db: web::Data<StorageState>,
     access_data: web::Query<AccessQS>,
     role: Role,
-    groups: Groups
+    groups: Groups,
 ) -> Result<HttpResponse, ApiError> {
     let mut db = try_get_connection(&db)?;
     if role == Role::from("root").unwrap() {
-        return Ok(HttpResponse::Ok().body("granted my dear looord"))
+        return Ok(HttpResponse::Ok().body("granted my dear looord"));
     }
     match Url::parse(&access_data.origin) {
-        Ok(parsed_url) => {
-            match parsed_url.host_str() {
-                Some(origin_host) => {
-                    GroupUser::user_allowed_to_origin(&mut *db, &access_data.origin, origin_host, &groups.0.iter().map(|g| g.id).collect::<Vec<i32>>())?;
-                    Ok(HttpResponse::Ok().body("granted"))
-                },
-                None => return Err(ApiError::Internal)
+        Ok(parsed_url) => match parsed_url.host_str() {
+            Some(origin_host) => {
+                GroupUser::user_allowed_to_origin(
+                    &mut db,
+                    &access_data.origin,
+                    origin_host,
+                    &groups.0.iter().map(|g| g.id).collect::<Vec<i32>>(),
+                )?;
+                Ok(HttpResponse::Ok().body("granted"))
             }
+            None => Err(ApiError::Internal),
         },
         Err(e) => {
             info!("bad api usage {e:?} - {:?}", access_data.origin);
-            return Err(ApiError::User)
-        },
+            Err(ApiError::User)
+        }
     }
 }
 

@@ -3,12 +3,11 @@ use crate::models::group_model::Group;
 use crate::models::jwt_model::JWTInternal;
 use crate::models::user_model::User;
 use diesel::result::DatabaseErrorKind;
+use diesel::ExpressionMethods;
 use diesel::{
     insert_into, Associations, Identifiable, Insertable, QueryDsl, Queryable, RunQueryDsl,
     Selectable, SqliteConnection,
 };
-use diesel::{BoolExpressionMethods, ExpressionMethods, JoinOnDsl, TextExpressionMethods};
-use futures::StreamExt;
 use log::error;
 use serde::{Deserialize, Serialize};
 
@@ -81,9 +80,25 @@ impl GroupUser {
         host: &str,
         groups: &Vec<i32>,
     ) -> Result<(), ApiError> {
-        let domain_matches = crate::schema::domain_rules::dsl::domain_rules.filter(crate::schema::domain_rules::dsl::domain.eq(host)).filter(crate::schema::domain_rules::dsl::group_id::eq_any(crate::schema::domain_rules::columns::group_id, groups)).count().get_result::<i64>(db).map_err(|_| ApiError::Internal)?;
-        let url_matches = crate::schema::url_rules::dsl::url_rules.filter(crate::schema::url_rules::dsl::url.eq(origin)).filter(crate::schema::url_rules::dsl::group_id::eq_any(crate::schema::url_rules::columns::group_id, groups)).count().get_result::<i64>(db).map_err(|_| ApiError::Internal)?;
-        return if domain_matches + url_matches < 1 {
+        let domain_matches = crate::schema::domain_rules::dsl::domain_rules
+            .filter(crate::schema::domain_rules::dsl::domain.eq(host))
+            .filter(crate::schema::domain_rules::dsl::group_id::eq_any(
+                crate::schema::domain_rules::columns::group_id,
+                groups,
+            ))
+            .count()
+            .get_result::<i64>(db)
+            .map_err(|_| ApiError::Internal)?;
+        let url_matches = crate::schema::url_rules::dsl::url_rules
+            .filter(crate::schema::url_rules::dsl::url.eq(origin))
+            .filter(crate::schema::url_rules::dsl::group_id::eq_any(
+                crate::schema::url_rules::columns::group_id,
+                groups,
+            ))
+            .count()
+            .get_result::<i64>(db)
+            .map_err(|_| ApiError::Internal)?;
+        if domain_matches + url_matches < 1 {
             Err(ApiError::Group)
         } else {
             Ok(())

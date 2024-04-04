@@ -1,22 +1,22 @@
-use std::future::{Future, ready};
-use std::pin::Pin;
-use actix_web::{FromRequest, HttpRequest, web};
-use actix_web::dev::Payload;
 use crate::api_error::ApiError;
+use crate::helpers::try_get_connection;
 use crate::models::group_user_model::GroupUser;
+use crate::models::jwt_model::JWTInternal;
 use crate::models::user_model::User;
+use crate::{KeySet, StorageState};
+use actix_web::dev::Payload;
+use actix_web::{web, FromRequest, HttpRequest};
 use diesel::result::{DatabaseErrorKind, Error as DieselError};
 use diesel::{
     insert_into, AsChangeset, Identifiable, Insertable, QueryDsl, Queryable, RunQueryDsl,
     Selectable, SelectableHelper, SqliteConnection,
 };
 use diesel::{BelongingToDsl, ExpressionMethods, JoinOnDsl};
-use futures::future::{err, ok};
+use futures::future::ok;
 use log::error;
 use serde::{Deserialize, Serialize};
-use crate::helpers::try_get_connection;
-use crate::models::jwt_model::JWTInternal;
-use crate::{KeySet, StorageState};
+use std::future::{ready, Future};
+use std::pin::Pin;
 
 #[derive(
     Identifiable,
@@ -132,9 +132,9 @@ pub(crate) struct Groups(pub(crate) Vec<Group>);
 
 impl FromRequest for Groups {
     type Error = ApiError;
-    type Future =  Pin<Box<dyn Future<Output = Result<Self, Self::Error>>>>;
+    type Future = Pin<Box<dyn Future<Output = Result<Self, Self::Error>>>>;
 
-    fn from_request(req: &HttpRequest, payload: &mut Payload) -> Self::Future {
+    fn from_request(req: &HttpRequest, _: &mut Payload) -> Self::Future {
         let mut db = if let Some(storage) = req.app_data::<web::Data<StorageState>>() {
             match try_get_connection(storage) {
                 Ok(db) => db,
@@ -148,56 +148,51 @@ impl FromRequest for Groups {
             error!("couldn't access key set");
             return Box::pin(ready(Err(ApiError::Internal)));
         };
-        let mut refresh_cookie = false;
         let req = req.clone();
         match req.cookie("jwt") {
             Some(jwt) => {
-                let claims = match JWTInternal::validate_jwt(&mut db, &jwt.value(), &key_set.decoding) {
-                    Ok(claims) => {
-                        let needs_refresh = match JWTInternal::needs_refresh(&mut db, &claims) {
-                            Ok(needs_refresh) => {
-                                if needs_refresh {
-                                    refresh_cookie = true;
+                let claims =
+                    match JWTInternal::validate_jwt(&mut db, jwt.value(), &key_set.decoding) {
+                        Ok(claims) => {
+                            let needs_refresh = match JWTInternal::needs_refresh(&mut db, &claims) {
+                                Ok(needs_refresh) => needs_refresh,
+                                Err(e) => {
+                                    error!("{e:?}");
+                                    return Box::pin(ready(Err(e)));
                                 }
-                                needs_refresh
-                            }
-                            Err(e) => {
-                                error!("{e:?}");
-                                return Box::pin(ready(Err(e)));
-                            }
-                        };
-                        if needs_refresh {
-                            match JWTInternal::refresh(
-                                &mut db,
-                                &claims.user,
-                                &claims.jti,
-                                &key_set.encoding,
-                            ) {
-                                Ok(refresh) => match JWTInternal::register(&mut db, &refresh) {
-                                    Ok(()) => refresh,
+                            };
+                            if needs_refresh {
+                                match JWTInternal::refresh(
+                                    &mut db,
+                                    &claims.user,
+                                    &claims.jti,
+                                    &key_set.encoding,
+                                    false,
+                                ) {
+                                    Ok(refresh) => match JWTInternal::register(&mut db, &refresh) {
+                                        Ok(()) => refresh,
+                                        Err(e) => return Box::pin(ready(Err(e))),
+                                    },
                                     Err(e) => return Box::pin(ready(Err(e))),
-                                },
-                                Err(e) => return Box::pin(ready(Err(e))),
-                            }
-                        } else {
-                            match JWTInternal::from(&claims, &key_set.encoding) {
-                                Ok(token) => token,
-                                Err(e) => return Box::pin(ready(Err(e))),
+                                }
+                            } else {
+                                match JWTInternal::from(&claims, &key_set.encoding) {
+                                    Ok(token) => token,
+                                    Err(e) => return Box::pin(ready(Err(e))),
+                                }
                             }
                         }
-                    }
-                    Err(e) => return Box::pin(ready(Err(e))),
-                };
-                return Box::pin(ok(Groups(claims.claims.groups)));
-            },
-            None => return Box::pin(ok(Groups(vec!(Group {
+                        Err(e) => return Box::pin(ready(Err(e))),
+                    };
+                Box::pin(ok(Groups(claims.claims.groups)))
+            }
+            None => Box::pin(ok(Groups(vec![Group {
                 id: 1,
-                name: "public".to_string()
-            }))))  // TODO make this cleaner
+                name: "public".to_string(),
+            }]))), // TODO make this cleaner
         }
     }
 }
-
 
 #[derive(Insertable, Serialize, Deserialize, Debug)]
 #[diesel(table_name = crate::schema::groups)]

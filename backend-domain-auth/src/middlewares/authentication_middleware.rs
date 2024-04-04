@@ -77,6 +77,7 @@ where
                         &claims.user,
                         &claims.jti,
                         &key_set.encoding,
+                        true,
                     ) {
                         Ok(refresh) => match JWTInternal::register(&mut db, &refresh) {
                             Ok(()) => refresh,
