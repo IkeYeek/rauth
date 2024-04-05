@@ -14,7 +14,7 @@ use url::Url;
 #[derive(Serialize, Deserialize)]
 pub(crate) struct AuthPayload {
     login: String,
-    hash: String,
+    password: String,
 }
 #[derive(Serialize)]
 struct AuthResponse {
@@ -26,7 +26,7 @@ pub(crate) async fn auth(
     key_set: web::Data<KeySet>,
 ) -> Result<HttpResponse, ApiError> {
     let mut db = try_get_connection(&db)?;
-    let user = User::lookup(&mut db, &payload.login, &payload.hash)?;
+    let user = User::lookup(&mut db, &payload.login, &payload.password)?;
     let new_jwt = JWTInternal::create(&mut db, &user, &key_set.encoding)?;
     JWTInternal::register(&mut db, &new_jwt)?;
     /*let jwt_cookie = Cookie::build("jwt", &new_jwt.token)

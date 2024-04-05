@@ -22,6 +22,7 @@ use env_logger::Env;
 use jsonwebtoken::{DecodingKey, EncodingKey};
 use std::env;
 use std::sync::Mutex;
+use actix_cors::Cors;
 
 pub(crate) mod api_error;
 pub(crate) mod helpers;
@@ -62,7 +63,9 @@ async fn main() -> std::io::Result<()> {
             .expect("Couldn't load public key"),
     };
     HttpServer::new(move || {
+        let cors = Cors::permissive(); // TODO change this
         App::new()
+            .wrap(cors)
             .app_data(storage.clone())
             .app_data(web::Data::new(keyset.clone()))
             .wrap(NormalizePath::new(TrailingSlash::Always))

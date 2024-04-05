@@ -1,3 +1,4 @@
+use bcrypt::BcryptResult;
 use crate::api_error::ApiError;
 use crate::models::group_model::Group;
 use crate::models::group_user_model::GroupUser;
@@ -37,7 +38,17 @@ pub(crate) struct User {
 
 impl User {
     pub(crate) fn create(db: &mut SqliteConnection, u: &NewUser) -> Result<User, ApiError> {
-        match insert_into(users).values(u).get_results::<User>(db) {
+        let hashed_new_user = NewUser {
+            login: u.login.clone(),
+            hash: match bcrypt::hash(&u.hash, 12) {
+                Err(e) => {
+                    error!("{e:?}");
+                    return Err(ApiError::Internal);
+                }
+                Ok(h) => {h}
+            }
+        };
+        match insert_into(users).values(hashed_new_user).get_results::<User>(db) {
             Ok(mut res) => match res.pop() {
                 Some(created_user) => {
                     RoleUser::add_role_to_user(
@@ -79,14 +90,21 @@ impl User {
     pub(crate) fn lookup(
         db: &mut SqliteConnection,
         user_login: &str,
-        user_hash: &str,
+        user_password: &str,
     ) -> Result<User, ApiError> {
-        users
+        let matching_user = users
             .filter(login.eq(user_login))
-            .filter(hash.eq(user_hash))
             .select(User::as_select())
             .first(db)
-            .map_err(|_| ApiError::User)
+            .map_err(|_| ApiError::User)?;
+        if let Ok(matching) = bcrypt::verify(user_password, &matching_user.hash) {
+            return if matching {
+                Ok(matching_user)
+            } else {
+                Err(ApiError::User)
+            }
+        }
+        Err(ApiError::Internal)
     }
 
     pub(crate) fn update_user(db: &mut SqliteConnection, user: &User) -> Result<(), ApiError> {
