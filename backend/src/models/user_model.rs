@@ -55,7 +55,7 @@ impl User {
         }
     }
 
-    pub(crate) fn read_all(db: &mut SqliteConnection) -> Result<Vec<User>, ApiError> {
+    pub(crate) fn get_all(db: &mut SqliteConnection) -> Result<Vec<User>, ApiError> {
         match users.select(User::as_select()).load(db) {
             Ok(all_users) => Ok(all_users),
             Err(e) => {
@@ -65,7 +65,7 @@ impl User {
         }
     }
 
-    pub(crate) fn read_by_id(db: &mut SqliteConnection, user_id: i32) -> Result<User, ApiError> {
+    pub(crate) fn get(db: &mut SqliteConnection, user_id: i32) -> Result<User, ApiError> {
         match users
             .filter(id.eq(user_id))
             .select(User::as_select())

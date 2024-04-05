@@ -139,15 +139,15 @@ async fn main() -> std::io::Result<()> {
                                     .service(
                                         web::scope("/for")
                                             .service(
-                                                web::resource("/domain")
+                                                web::resource("/domain/{domain_id}")
                                                     .route(web::get().to(domain_rules_for_domain)),
                                             )
                                             .service(
-                                                web::resource("/group")
+                                                web::resource("/group/{group_id}")
                                                     .route(web::get().to(domain_rules_for_group)),
                                             )
                                             .service(
-                                                web::resource("/user")
+                                                web::resource("/user/{user_id}")
                                                     .route(web::get().to(domain_rules_for_user)),
                                             ),
                                     )
@@ -170,15 +170,15 @@ async fn main() -> std::io::Result<()> {
                                     .service(
                                         web::scope("/for")
                                             .service(
-                                                web::resource("/url")
+                                                web::resource("/url/{url_id}")
                                                     .route(web::get().to(url_rules_for_url)),
                                             )
                                             .service(
-                                                web::resource("/group")
+                                                web::resource("/group/{group_id}")
                                                     .route(web::get().to(url_rules_for_group)),
                                             )
                                             .service(
-                                                web::resource("/user")
+                                                web::resource("/user/{user_id}")
                                                     .route(web::get().to(url_rules_for_user)),
                                             ),
                                     )

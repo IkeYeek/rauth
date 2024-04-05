@@ -42,39 +42,30 @@ pub(crate) async fn domain_rule(
     Ok(web::Json(DomainRule::get(&mut db, rule_id)?))
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct PayloadDomainRulesForDomain {
-    domain: String,
-}
 pub(crate) async fn domain_rules_for_domain(
     db: web::Data<StorageState>,
-    payload: web::Json<PayloadDomainRulesForDomain>,
+    path: web::Path<String>,
 ) -> Result<web::Json<Vec<DomainRule>>, ApiError> {
     let mut db = try_get_connection(&db)?;
-    Ok(web::Json(DomainRule::for_domain(&mut db, &payload.domain)?))
-}
-#[derive(Serialize, Deserialize, Debug)]
-pub struct PayloadDomainRulesForGroup {
-    group_id: i32,
+    let domain = path.into_inner();
+    Ok(web::Json(DomainRule::for_domain(&mut db, &domain)?))
 }
 pub(crate) async fn domain_rules_for_group(
     db: web::Data<StorageState>,
-    payload: web::Json<PayloadDomainRulesForGroup>,
+    path: web::Path<i32>,
 ) -> Result<web::Json<Vec<DomainRule>>, ApiError> {
     let mut db = try_get_connection(&db)?;
-    let group = Group::get(&mut db, payload.group_id)?;
+    let group_id = path.into_inner();
+    let group = Group::get(&mut db, group_id)?;
     Ok(web::Json(DomainRule::for_group(&mut db, &group)?))
-}
-#[derive(Serialize, Deserialize, Debug)]
-pub struct PayloadDomainRulesForUser {
-    user_id: i32,
 }
 pub(crate) async fn domain_rules_for_user(
     db: web::Data<StorageState>,
-    payload: web::Json<PayloadDomainRulesForUser>,
+    path: web::Path<i32>,
 ) -> Result<web::Json<Vec<DomainRule>>, ApiError> {
     let mut db = try_get_connection(&db)?;
-    let user = User::read_by_id(&mut db, payload.user_id)?;
+    let user_id = path.into_inner();
+    let user = User::get(&mut db, user_id)?;
     Ok(web::Json(DomainRule::for_user(&mut db, &user)?))
 }
 pub(crate) async fn add_url_rule(
@@ -111,38 +102,29 @@ pub(crate) async fn url_rule(
     Ok(web::Json(URLRule::get(&mut db, rule_id)?))
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct PayloadURLRulesForURL {
-    url: String,
-}
 pub(crate) async fn url_rules_for_url(
     db: web::Data<StorageState>,
-    payload: web::Json<crate::routes::rules_routes::PayloadURLRulesForURL>,
+    path: web::Path<String>,
 ) -> Result<web::Json<Vec<URLRule>>, ApiError> {
     let mut db = try_get_connection(&db)?;
-    Ok(web::Json(URLRule::for_url(&mut db, &payload.url)?))
-}
-#[derive(Serialize, Deserialize, Debug)]
-pub struct PayloadURLRulesForGroup {
-    group_id: i32,
+    let url = path.into_inner();
+    Ok(web::Json(URLRule::for_url(&mut db, &url)?))
 }
 pub(crate) async fn url_rules_for_group(
     db: web::Data<StorageState>,
-    payload: web::Json<crate::routes::rules_routes::PayloadURLRulesForGroup>,
+    path: web::Path<i32>,
 ) -> Result<web::Json<Vec<URLRule>>, ApiError> {
     let mut db = try_get_connection(&db)?;
-    let group = Group::get(&mut db, payload.group_id)?;
+    let group_id = path.into_inner();
+    let group = Group::get(&mut db, group_id)?;
     Ok(web::Json(URLRule::for_group(&mut db, &group)?))
-}
-#[derive(Serialize, Deserialize, Debug)]
-pub struct PayloadURLRulesForUser {
-    user_id: i32,
 }
 pub(crate) async fn url_rules_for_user(
     db: web::Data<StorageState>,
-    payload: web::Json<crate::routes::rules_routes::PayloadURLRulesForUser>,
+    path: web::Path<i32>,
 ) -> Result<web::Json<Vec<URLRule>>, ApiError> {
     let mut db = try_get_connection(&db)?;
-    let user = User::read_by_id(&mut db, payload.user_id)?;
+    let user_id = path.into_inner();
+    let user = User::get(&mut db, user_id)?;
     Ok(web::Json(URLRule::for_user(&mut db, &user)?))
 }

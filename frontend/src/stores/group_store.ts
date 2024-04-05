@@ -1,11 +1,12 @@
 import {defineStore} from "pinia";
 import {ApiService} from "@/helpers/api_service";
-type Group = {
-    id: number;
-    name: string;
-}
-type NewGroup = {
+import type {User} from "@/stores/user_store";
+
+export type NewGroup = {
     name: String;
+}
+export type Group = NewGroup & {
+    id: number;
 }
 type GroupUpdate = {
     new_name: String;
@@ -13,22 +14,18 @@ type GroupUpdate = {
 type AddGroupPayload = {
     user_id: number,
 }
-type User = {
-    id: number;
-    login: string;
-    hash: string;
-}
+
 export const useGroupStore = defineStore("group", () => {
-    const createGroup = async (to_create: NewGroup): Promise<Group> => {
+    const create = async (to_create: NewGroup): Promise<Group> => {
         return await ApiService.makeAuthenticatedApiRequest<Group>("post", "api/groups", to_create);
     }
 
     const getAll = async (): Promise<Array<Group>> => {
-        return await ApiService.makeAuthenticatedApiRequest<Array<Group>>("get", "api/groups", undefined);
+        return await ApiService.makeAuthenticatedApiRequest<Array<Group>>("get", "api/groups");
     }
 
     const get = async (id: number): Promise<Group> => {
-        return await ApiService.makeAuthenticatedApiRequest<Group>("get", `api/groups/${id}`, undefined);
+        return await ApiService.makeAuthenticatedApiRequest<Group>("get", `api/groups/${id}`);
     }
 
     const update = async (id: number, new_value: GroupUpdate): Promise<Group> => {
@@ -36,7 +33,7 @@ export const useGroupStore = defineStore("group", () => {
     }
 
     const remove = async (id: number): Promise<void> => {
-        return await ApiService.makeAuthenticatedApiRequest<void>("delete", `api/groups/${id}`, undefined);
+        return await ApiService.makeAuthenticatedApiRequest<void>("delete", `api/groups/${id}`);
     }
 
     const addUserTo = async (id: number, payload: AddGroupPayload): Promise<void> => {
@@ -48,11 +45,11 @@ export const useGroupStore = defineStore("group", () => {
     }
 
     const listUsersFrom = async (id: number): Promise<Array<User>> => {
-        return await ApiService.makeAuthenticatedApiRequest<Array<User>>("get", `api/groups/${id}/users`, undefined);
+        return await ApiService.makeAuthenticatedApiRequest<Array<User>>("get", `api/groups/${id}/users`);
     }
     
     return {
-        createGroup,
+        create,
         getAll,
         get,
         update,

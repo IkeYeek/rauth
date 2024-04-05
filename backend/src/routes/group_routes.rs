@@ -102,7 +102,7 @@ pub(crate) async fn delete_user_from_group(
     let mut db = try_get_connection(&db)?;
     let group_id = path.into_inner();
     let group = Group::get(&mut db, group_id)?;
-    let user = User::read_by_id(&mut db, payload.user_id)?;
+    let user = User::get(&mut db, payload.user_id)?;
     GroupUser::remove_user_from_group(&mut db, &user, &group)?;
     Ok("removed.")
 }

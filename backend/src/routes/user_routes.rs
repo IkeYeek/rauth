@@ -10,17 +10,16 @@ use serde::{Deserialize, Serialize};
 pub(crate) async fn create_user(
     form_data: web::Json<NewUser>,
     db: web::Data<StorageState>,
-) -> Result<&'static str, ApiError> {
+) -> Result<web::Json<User>, ApiError> {
     let mut db = try_get_connection(&db)?;
-    User::create(&mut db, &form_data.0)?;
-    Ok("created.")
+    Ok(web::Json(User::create(&mut db, &form_data.0)?))
 }
 
 pub(crate) async fn all_users(
     db: web::Data<StorageState>,
 ) -> Result<web::Json<Vec<User>>, ApiError> {
     let mut db = try_get_connection(&db)?;
-    let all_users = User::read_all(&mut db)?;
+    let all_users = User::get_all(&mut db)?;
     Ok(web::Json(all_users))
 }
 
@@ -30,7 +29,7 @@ pub(crate) async fn one_user(
 ) -> Result<web::Json<User>, ApiError> {
     let mut db = try_get_connection(&db)?;
     let uid = path.into_inner();
-    let user = User::read_by_id(&mut db, uid)?;
+    let user = User::get(&mut db, uid)?;
     Ok(web::Json(user))
 }
 
@@ -46,7 +45,7 @@ pub(crate) async fn update_user(
 ) -> Result<&'static str, ApiError> {
     let mut db = try_get_connection(&db)?;
     let uid = path.into_inner();
-    let mut user_retrieved = User::read_by_id(&mut db, uid)?;
+    let mut user_retrieved = User::get(&mut db, uid)?;
     if let Some(new_login) = user_update_payload.new_login.clone() {
         user_retrieved.login = new_login;
     };
@@ -63,7 +62,7 @@ pub(crate) async fn delete_user(
 ) -> Result<&'static str, ApiError> {
     let mut db = try_get_connection(&db)?;
     let uid = path.into_inner();
-    let user = User::read_by_id(&mut db, uid)?;
+    let user = User::get(&mut db, uid)?;
     JWTInternal::invalidate_user(&mut db, &user)?;
     User::delete_user(&mut db, &user)?;
     Ok("deleted.")
@@ -75,6 +74,6 @@ pub(crate) async fn get_user_groups(
 ) -> Result<web::Json<Vec<Group>>, ApiError> {
     let mut db = try_get_connection(&db)?;
     let id = path.into_inner();
-    let user = User::read_by_id(&mut db, id)?;
+    let user = User::get(&mut db, id)?;
     Ok(web::Json(User::get_groups(&mut db, &user)?))
 }
