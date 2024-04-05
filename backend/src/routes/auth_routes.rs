@@ -6,10 +6,8 @@ use crate::models::jwt_model::JWTInternal;
 use crate::models::role_model::Role;
 use crate::models::user_model::User;
 use crate::{KeySet, StorageState};
-use actix_web::cookie::time::Duration;
-use actix_web::cookie::Cookie;
 use actix_web::{web, HttpRequest, HttpResponse};
-use log::{error, info};
+use log::{info};
 use serde::{Deserialize, Serialize};
 use url::Url;
 
@@ -32,12 +30,10 @@ pub(crate) async fn auth(
     let new_jwt = JWTInternal::create(&mut db, &user, &key_set.encoding)?;
     JWTInternal::register(&mut db, &new_jwt)?;
     /*let jwt_cookie = Cookie::build("jwt", &new_jwt.token)
-        .domain(".localhost.dummy")
-        .max_age(Duration::weeks(1))
-        .finish();*/
-    let response = HttpResponse::Ok().json(AuthResponse {
-        jwt: new_jwt.token,
-    });
+    .domain(".localhost.dummy")
+    .max_age(Duration::weeks(1))
+    .finish();*/
+    let response = HttpResponse::Ok().json(AuthResponse { jwt: new_jwt.token });
     Ok(response)
     /*match response.add_cookie(&jwt_cookie) {
         Ok(()) => Ok(response),

@@ -6,7 +6,6 @@ use crate::models::url_rule_model::{NewURLRule, URLRule};
 use crate::models::user_model::User;
 use crate::StorageState;
 use actix_web::web;
-use serde::{Deserialize, Serialize};
 
 pub(crate) async fn add_domain_rule(
     db: web::Data<StorageState>,

@@ -152,45 +152,50 @@ impl FromRequest for Groups {
         match req./*cookie("jwt")*/headers().get("Authorization") {
             Some(jwt) => {
                 let jwt = match jwt.to_str() {
-                    Ok(jwt) => if jwt.starts_with("Bearer ") {&jwt[7..jwt.len()]} else {return Box::pin(ready(Err(ApiError::Jwt)));}
+                    Ok(jwt) => {
+                        if jwt.starts_with("Bearer ") {
+                            &jwt[7..jwt.len()]
+                        } else {
+                            return Box::pin(ready(Err(ApiError::Jwt)));
+                        }
+                    }
                     Err(e) => {
                         error!("{e:?}");
                         return Box::pin(ready(Err(ApiError::Internal)));
                     }
                 };
-                let claims =
-                    match JWTInternal::validate_jwt(&mut db, jwt, &key_set.decoding) {
-                        Ok(claims) => {
-                            let needs_refresh = match JWTInternal::needs_refresh(&mut db, &claims) {
-                                Ok(needs_refresh) => needs_refresh,
-                                Err(e) => {
-                                    error!("{e:?}");
-                                    return Box::pin(ready(Err(e)));
-                                }
-                            };
-                            if needs_refresh {
-                                match JWTInternal::refresh(
-                                    &mut db,
-                                    &claims.user,
-                                    &claims.jti,
-                                    &key_set.encoding,
-                                    false,
-                                ) {
-                                    Ok(refresh) => match JWTInternal::register(&mut db, &refresh) {
-                                        Ok(()) => refresh,
-                                        Err(e) => return Box::pin(ready(Err(e))),
-                                    },
+                let claims = match JWTInternal::validate_jwt(&mut db, jwt, &key_set.decoding) {
+                    Ok(claims) => {
+                        let needs_refresh = match JWTInternal::needs_refresh(&mut db, &claims) {
+                            Ok(needs_refresh) => needs_refresh,
+                            Err(e) => {
+                                error!("{e:?}");
+                                return Box::pin(ready(Err(e)));
+                            }
+                        };
+                        if needs_refresh {
+                            match JWTInternal::refresh(
+                                &mut db,
+                                &claims.user,
+                                &claims.jti,
+                                &key_set.encoding,
+                                false,
+                            ) {
+                                Ok(refresh) => match JWTInternal::register(&mut db, &refresh) {
+                                    Ok(()) => refresh,
                                     Err(e) => return Box::pin(ready(Err(e))),
-                                }
-                            } else {
-                                match JWTInternal::from(&claims, &key_set.encoding) {
-                                    Ok(token) => token,
-                                    Err(e) => return Box::pin(ready(Err(e))),
-                                }
+                                },
+                                Err(e) => return Box::pin(ready(Err(e))),
+                            }
+                        } else {
+                            match JWTInternal::from(&claims, &key_set.encoding) {
+                                Ok(token) => token,
+                                Err(e) => return Box::pin(ready(Err(e))),
                             }
                         }
-                        Err(e) => return Box::pin(ready(Err(e))),
-                    };
+                    }
+                    Err(e) => return Box::pin(ready(Err(e))),
+                };
                 Box::pin(ok(Groups(claims.claims.groups)))
             }
             None => Box::pin(ok(Groups(vec![Group {
