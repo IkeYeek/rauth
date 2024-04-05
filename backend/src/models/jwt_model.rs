@@ -26,6 +26,7 @@ pub(crate) struct JWTInternal {
     pub(crate) claims: Claims,
     pub(crate) token: String,
 }
+#[allow(clippy::struct_field_names)]
 #[derive(Insertable, Serialize, Deserialize, Selectable, Queryable)]
 #[diesel(table_name = crate::schema::jwt)]
 struct Jwt {

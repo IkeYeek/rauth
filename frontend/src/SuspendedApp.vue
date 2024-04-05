@@ -1,5 +1,4 @@
 <script setup lang="ts">
-
 import App from "./App.vue";
 </script>
 
@@ -8,11 +7,11 @@ import App from "./App.vue";
     <template #default>
       <App />
     </template>
-    <template #fallback><div id="loading">
-      <div>
-        Loading...
-      </div>
-    </div></template>
+    <template #fallback
+      ><div id="loading">
+        <div>Loading...</div>
+      </div></template
+    >
   </Suspense>
 </template>
 

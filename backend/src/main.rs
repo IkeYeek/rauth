@@ -14,15 +14,15 @@ use crate::routes::rules_routes::{
 use crate::routes::user_routes::{
     all_users, create_user, delete_user, get_user_groups, one_user, update_user,
 };
+use actix_cors::Cors;
 use actix_web::middleware::{Logger, NormalizePath, TrailingSlash};
-use actix_web::{web, App, HttpServer, http};
+use actix_web::{web, App, HttpServer};
 use diesel::{Connection, SqliteConnection};
 use dotenvy::dotenv;
 use env_logger::Env;
 use jsonwebtoken::{DecodingKey, EncodingKey};
 use std::env;
 use std::sync::Mutex;
-use actix_cors::Cors;
 
 pub(crate) mod api_error;
 pub(crate) mod helpers;
@@ -66,7 +66,8 @@ async fn main() -> std::io::Result<()> {
         let cors = Cors::default()
             .allowed_origin("http://localhost:5173")
             .allowed_methods(vec!["GET", "POST", "PATCH", "DELETE", "OPTION"])
-            .allow_any_header().max_age(3600); // TODO change this
+            .allow_any_header()
+            .max_age(3600); // TODO change this
         App::new()
             .wrap(cors)
             .app_data(storage.clone())

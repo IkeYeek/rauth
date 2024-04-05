@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {computed, onMounted, ref} from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useAuthStore } from "@/stores/auth_store";
 
 const loading = ref(false);
@@ -10,7 +10,6 @@ const password = ref("");
 
 const authStore = useAuthStore();
 
-
 const tryAuth = async (e: MouseEvent) => {
   e.preventDefault();
   error.value = undefined;
@@ -18,10 +17,10 @@ const tryAuth = async (e: MouseEvent) => {
     error.value = "missing login";
   }
   if (password.value.length < 3) {
-    error.value = error.value === undefined ? "missing password" : `${error.value} + missing password`;
+    error.value =
+      error.value === undefined ? "missing password" : `${error.value} + missing password`;
   }
-  if (error.value !== undefined)
-    return;
+  if (error.value !== undefined) return;
   loading.value = true;
   try {
     await authStore.tryAuth(login.value, password.value);
@@ -32,7 +31,6 @@ const tryAuth = async (e: MouseEvent) => {
     loading.value = false;
     password.value = "";
   }
-
 };
 </script>
 
@@ -40,8 +38,12 @@ const tryAuth = async (e: MouseEvent) => {
   <div id="parent">
     <img src="https://ike.icu/assets/logo-mT7adExh.png" alt=" logo" id="logo" />
     <form id="form">
-      <template v-if="loading"> loading... </template>
-      <template v-else-if="authStore.authed"><p>Already authenticated</p><button @click="authStore.logOut()">logout</button></template>
+      <template v-if="loading"> loading...</template>
+      <template v-else-if="authStore.authed"
+      ><p>Already authenticated</p>
+        <button @click="authStore.logOut()">logout</button>
+      </template
+      >
       <template v-else>
         <p class="error" v-if="error !== undefined">{{ error }}</p>
         <label for="login">login: </label>

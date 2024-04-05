@@ -5,7 +5,7 @@ use crate::{KeySet, StorageState};
 use actix_web::dev::{Service, ServiceRequest, ServiceResponse, Transform};
 use actix_web::http::header::{HeaderName, HeaderValue};
 use actix_web::{web, HttpMessage};
-use futures::future::{LocalBoxFuture};
+use futures::future::LocalBoxFuture;
 use futures::FutureExt;
 use log::error;
 use std::future::{ready, Ready};

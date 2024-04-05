@@ -3,8 +3,8 @@ import axios from "axios";
 import { useEnvStore } from "@/stores/env_store";
 import { BadCreditentials } from "@/errors/auth_errors";
 import { ApiError } from "@/errors/api_errors";
-import {ref} from "vue";
-import {ApiService} from "@/helpers/api_service";
+import { ref } from "vue";
+import { ApiService } from "@/helpers/api_service";
 type AuthResponse = {
   jwt: string;
 };
@@ -66,7 +66,7 @@ export const useAuthStore = defineStore("auth", () => {
   const logOut = (): void => {
     localStorage.removeItem("jwt");
     authed.value = false;
-  }
+  };
 
   return {
     tryAuth,

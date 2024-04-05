@@ -1,4 +1,3 @@
-use bcrypt::BcryptResult;
 use crate::api_error::ApiError;
 use crate::models::group_model::Group;
 use crate::models::group_user_model::GroupUser;
@@ -7,7 +6,7 @@ use crate::models::role_user_model::RoleUser;
 use crate::schema;
 use crate::schema::groups;
 use crate::schema::users::dsl::users;
-use crate::schema::users::{hash, id, login};
+use crate::schema::users::{id, login};
 use diesel::result::{DatabaseErrorKind, Error as DieselError};
 use diesel::ExpressionMethods;
 use diesel::{
@@ -45,10 +44,13 @@ impl User {
                     error!("{e:?}");
                     return Err(ApiError::Internal);
                 }
-                Ok(h) => {h}
-            }
+                Ok(h) => h,
+            },
         };
-        match insert_into(users).values(hashed_new_user).get_results::<User>(db) {
+        match insert_into(users)
+            .values(hashed_new_user)
+            .get_results::<User>(db)
+        {
             Ok(mut res) => match res.pop() {
                 Some(created_user) => {
                     RoleUser::add_role_to_user(
@@ -102,7 +104,7 @@ impl User {
                 Ok(matching_user)
             } else {
                 Err(ApiError::User)
-            }
+            };
         }
         Err(ApiError::Internal)
     }

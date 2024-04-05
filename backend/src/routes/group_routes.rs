@@ -3,11 +3,8 @@ use crate::helpers::try_get_connection;
 use crate::models::group_model::{Group, NewGroup};
 use crate::models::group_user_model::GroupUser;
 use crate::models::user_model::User;
-use crate::schema::users::dsl::users;
 use crate::StorageState;
 use actix_web::web;
-use diesel::prelude::*;
-use diesel::{QueryDsl, RunQueryDsl, SelectableHelper};
 use serde::{Deserialize, Serialize};
 
 pub(crate) async fn create_group(

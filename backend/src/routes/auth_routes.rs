@@ -6,8 +6,8 @@ use crate::models::jwt_model::JWTInternal;
 use crate::models::role_model::Role;
 use crate::models::user_model::User;
 use crate::{KeySet, StorageState};
-use actix_web::{web, HttpRequest, HttpResponse};
-use log::{info};
+use actix_web::{web, HttpResponse};
+use log::info;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
@@ -79,9 +79,6 @@ pub(crate) async fn has_access(
 }
 
 pub(crate) async fn is_auth(
-    req: HttpRequest,
-    db: web::Data<StorageState>,
-    key_set: web::Data<KeySet>,
 ) -> Result<&'static str, ApiError> {
     Ok("authed")
 }
