@@ -13,10 +13,10 @@ use serde::{Deserialize, Serialize};
 pub(crate) async fn create_group(
     db: web::Data<StorageState>,
     new_group: web::Json<NewGroup>,
-) -> Result<&'static str, ApiError> {
+) -> Result<web::Json<Group>, ApiError> {
     let mut db = try_get_connection(&db)?;
-    let _ = Group::create_group(&mut db, &new_group)?;
-    Ok("created.")
+    let g = Group::create_group(&mut db, &new_group)?;
+    Ok(web::Json(g))
 }
 
 pub(crate) async fn all_groups(

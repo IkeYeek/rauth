@@ -37,13 +37,13 @@ pub(crate) struct Group {
 }
 
 impl Group {
-    pub(crate) fn create_group(db: &mut SqliteConnection, g: &NewGroup) -> Result<web::Json<Group>, ApiError> {
+    pub(crate) fn create_group(db: &mut SqliteConnection, g: &NewGroup) -> Result<Group, ApiError> {
         match insert_into(crate::schema::groups::dsl::groups)
             .values(g)
             .get_results::<Group>(db)
         {
             Ok(mut res) => match res.pop() {
-                Some(created_group) => Ok(web::Json(created_group)),
+                Some(created_group) => Ok(created_group),
                 None => Err(ApiError::Internal),
             },
             Err(_) => Err(ApiError::GroupCreation),

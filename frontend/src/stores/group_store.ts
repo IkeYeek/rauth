@@ -1,6 +1,4 @@
 import {defineStore} from "pinia";
-import {useAuthStore} from "@/stores/auth_store";
-import {useEnvStore} from "@/stores/env_store";
 import {ApiService} from "@/helpers/api_service";
 type Group = {
     id: number;
@@ -21,8 +19,6 @@ type User = {
     hash: string;
 }
 export const useGroupStore = defineStore("group", () => {
-    const auth_store = useAuthStore();
-    const env_store = useEnvStore();
     const createGroup = async (to_create: NewGroup): Promise<Group> => {
         return await ApiService.makeAuthenticatedApiRequest<Group>("post", "api/groups", to_create);
     }
@@ -43,15 +39,15 @@ export const useGroupStore = defineStore("group", () => {
         return await ApiService.makeAuthenticatedApiRequest<void>("delete", `api/groups/${id}`, undefined);
     }
 
-    const add_user_to = async (id: number, payload: AddGroupPayload): Promise<void> => {
+    const addUserTo = async (id: number, payload: AddGroupPayload): Promise<void> => {
         return await ApiService.makeAuthenticatedApiRequest<void>("post", `api/groups/${id}/users`, payload);
     }
 
-    const delete_user_from = async (id: number, payload: AddGroupPayload): Promise<void> => {
+    const deleteUserFrom = async (id: number, payload: AddGroupPayload): Promise<void> => {
         return await ApiService.makeAuthenticatedApiRequest<void>("delete", `api/groups/${id}/users`, payload);
     }
 
-    const list_users_from = async (id: number): Promise<Array<User>> => {
+    const listUsersFrom = async (id: number): Promise<Array<User>> => {
         return await ApiService.makeAuthenticatedApiRequest<Array<User>>("get", `api/groups/${id}/users`, undefined);
     }
     
@@ -61,8 +57,8 @@ export const useGroupStore = defineStore("group", () => {
         get,
         update,
         remove,
-        add_user_to,
-        delete_user_from,
-        list_users_from,
+        addUserTo,
+        deleteUserFrom,
+        listUsersFrom,
     }
 });

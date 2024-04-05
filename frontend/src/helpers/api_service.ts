@@ -1,7 +1,8 @@
 import {useAuthStore} from "@/stores/auth_store";
 import {BadCreditentials} from "@/errors/auth_errors";
 import {ApiError, ApiUsage} from "@/errors/api_errors";
-import axios, {AxiosResponse} from "axios";
+import axios from "axios";
+import type {AxiosResponse} from "axios";
 import {useEnvStore} from "@/stores/env_store";
 
 export const ApiService = {
@@ -15,7 +16,7 @@ export const ApiService = {
         };
         if (await authStore.isAuth()) {
             let bad_usage = false;
-            let res: AxiosResponse<T>;
+            let res: AxiosResponse<T> | undefined = undefined;
             try {
                 switch (method) {
                     case "get":
@@ -44,7 +45,7 @@ export const ApiService = {
                 console.error(e);
                 throw new ApiError();
             }
-            if (bad_usage) {
+            if (bad_usage || res === undefined) {
                 throw new ApiUsage();
             }
             if (res.status === 200) {
