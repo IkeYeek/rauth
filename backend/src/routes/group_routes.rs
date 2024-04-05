@@ -76,15 +76,9 @@ pub(crate) async fn add_user_to_group(
     payload: web::Json<AddGroupPayload>,
 ) -> Result<&'static str, ApiError> {
     let mut db = try_get_connection(&db)?;
-    let path_data = path.into_inner();
-    let user = users
-        .filter(crate::schema::users::id.eq(payload.user_id))
-        .select(User::as_select())
-        .first(&mut *db);
-    let group = crate::schema::groups::dsl::groups
-        .filter(crate::schema::groups::dsl::id.eq(path_data))
-        .select(Group::as_select())
-        .first(&mut *db);
+    let group_id = path.into_inner();
+    let user = User::get(&mut db, payload.user_id);
+    let group = Group::get(&mut db, group_id);
     match (user, group) {
         (Ok(user), Ok(group)) => {
             GroupUser::add_user_to_group(&mut db, &user, &group)?;

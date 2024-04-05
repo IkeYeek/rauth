@@ -1,5 +1,9 @@
-<script setup lang="ts">
-import { RouterView } from 'vue-router'
+<script async setup lang="ts">
+import { RouterView } from "vue-router";
+import {useAuthStore} from "@/stores/auth_store";
+const authStore = useAuthStore();
+await authStore.isAuth();
+
 </script>
 
 <template>

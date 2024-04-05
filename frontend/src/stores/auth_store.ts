@@ -1,20 +1,24 @@
-import { defineStore } from 'pinia'
-import axios from 'axios'
-import { useEnvStore } from '@/stores/env_store'
-import { BadCreditentials } from '@/errors/auth_errors'
-import { ApiError } from '@/errors/api_errors'
+import { defineStore } from "pinia";
+import axios from "axios";
+import { useEnvStore } from "@/stores/env_store";
+import { BadCreditentials } from "@/errors/auth_errors";
+import { ApiError } from "@/errors/api_errors";
+import {ref} from "vue";
+import {ApiService} from "@/helpers/api_service";
 type AuthResponse = {
-  jwt: string
-}
-export const useAuthStore = defineStore('auth', () => {
-  const api_base = useEnvStore().app_base
+  jwt: string;
+};
+export const useAuthStore = defineStore("auth", () => {
+  const envStore = useEnvStore();
+  const api_base = useEnvStore().app_base;
+  const authed = ref(false);
   const getToken = (): string | null => {
-    return localStorage.getItem('jwt')
-  }
+    return localStorage.getItem("jwt");
+  };
 
   const setToken = (token: string) => {
-    localStorage.setItem('jwt', token)
-  }
+    localStorage.setItem("jwt", token);
+  };
 
   const tryAuth = async (login: string, password: string): Promise<void> => {
     try {
@@ -22,44 +26,54 @@ export const useAuthStore = defineStore('auth', () => {
         `${api_base}auth`,
         {
           login,
-          password
+          password,
         },
         {
-          validateStatus: (s) => s < 500
-        }
-      )
+          validateStatus: (s) => s < 500,
+        },
+      );
       if (status === 200) {
-        setToken(data.jwt)
-        return
+        setToken(data.jwt);
+        authed.value = true;
+        return;
       }
     } catch (e) {
-      console.error(e)
-      throw new ApiError()
+      console.error(e);
+      throw new ApiError();
     }
-    throw new BadCreditentials()
-  }
+    throw new BadCreditentials();
+  };
 
   const isAuth = async (): Promise<boolean> => {
-    const token = getToken()
-    if (token === null) return false
-    try {
-      const { status } = await axios.get(`${api_base}auth/`, {
-        headers: {
-          Authorization: `Bearer ${getToken()}`
-        },
-        validateStatus: (s) => s < 500
-      })
-      return status === 200
-    } catch (e) {
-      console.error(e)
-      throw new ApiError()
+    const token = getToken();
+    if (token === null) {
+      return false;
     }
+    try {
+      const { status } = await axios.get(`${envStore.app_base}auth`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        validateStatus: (s) => s < 500,
+      });
+      authed.value = true;
+      return status === 200;
+    } catch (e) {
+      throw new ApiError();
+    }
+  };
+
+  const logOut = (): void => {
+    localStorage.removeItem("jwt");
+    authed.value = false;
   }
 
   return {
     tryAuth,
     isAuth,
     getToken,
-    setToken
-  }
-})
+    setToken,
+    logOut,
+    authed,
+  };
+});

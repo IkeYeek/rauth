@@ -15,7 +15,7 @@ use crate::routes::user_routes::{
     all_users, create_user, delete_user, get_user_groups, one_user, update_user,
 };
 use actix_web::middleware::{Logger, NormalizePath, TrailingSlash};
-use actix_web::{web, App, HttpServer};
+use actix_web::{web, App, HttpServer, http};
 use diesel::{Connection, SqliteConnection};
 use dotenvy::dotenv;
 use env_logger::Env;
@@ -63,7 +63,10 @@ async fn main() -> std::io::Result<()> {
             .expect("Couldn't load public key"),
     };
     HttpServer::new(move || {
-        let cors = Cors::permissive(); // TODO change this
+        let cors = Cors::default()
+            .allowed_origin("http://localhost:5173")
+            .allowed_methods(vec!["GET", "POST", "PATCH", "DELETE", "OPTION"])
+            .allow_any_header().max_age(3600); // TODO change this
         App::new()
             .wrap(cors)
             .app_data(storage.clone())
@@ -74,7 +77,7 @@ async fn main() -> std::io::Result<()> {
                 web::scope("/auth")
                     .service(
                         web::resource("/")
-                            .route(web::get().to(is_auth))
+                            .route(web::get().to(is_auth).wrap(RequireAuth))
                             .route(web::post().to(auth)),
                     )
                     .service(web::resource("/has_access/").route(web::get().to(has_access))),

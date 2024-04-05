@@ -83,12 +83,5 @@ pub(crate) async fn is_auth(
     db: web::Data<StorageState>,
     key_set: web::Data<KeySet>,
 ) -> Result<&'static str, ApiError> {
-    let mut db = try_get_connection(&db)?;
-    match req.cookie("jwt") {
-        Some(jwt_cookie) => {
-            JWTInternal::validate_jwt(&mut db, jwt_cookie.value(), &key_set.decoding)?;
-            Ok("authed.")
-        }
-        None => Err(ApiError::Jwt),
-    }
+    Ok("authed")
 }

@@ -52,10 +52,10 @@ where
                     if token.starts_with("Bearer ") {
                         &token[7..token.len()]
                     } else {
-                        return Box::pin(ready(Err(actix_web::Error::from(ApiError::Internal))));
+                        return Box::pin(ready(Err(actix_web::Error::from(ApiError::Jwt))));
                     }
                 } else {
-                    return Box::pin(ready(Err(actix_web::Error::from(ApiError::Jwt))));
+                    return Box::pin(ready(Err(actix_web::Error::from(ApiError::Internal))));
                 }
             }
             None => return Box::pin(ready(Err(actix_web::Error::from(ApiError::Jwt)))),
