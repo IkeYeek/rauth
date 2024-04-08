@@ -15,6 +15,9 @@ pub enum ApiError {
     #[display(fmt = "Error with user.")]
     User,
 
+    #[display(fmt = "User not found.")]
+    UserNotFound,
+
     #[display(fmt = "Error with domain rule.")]
     DomainRule,
 
@@ -29,6 +32,8 @@ pub enum ApiError {
 
     #[display(fmt = "Couldn't validate jwt")]
     Jwt,
+    #[display(fmt = "Cannot delete root user !")]
+    CantDeleteRoot
 }
 
 impl ResponseError for ApiError {
@@ -41,6 +46,8 @@ impl ResponseError for ApiError {
             | ApiError::URLRule
             | ApiError::UserCreation
             | ApiError::User => StatusCode::BAD_REQUEST,
+            ApiError::UserNotFound => StatusCode::NOT_FOUND,
+            ApiError::CantDeleteRoot => StatusCode::UNPROCESSABLE_ENTITY,
             ApiError::Jwt => StatusCode::FORBIDDEN,
             ApiError::Internal => StatusCode::INTERNAL_SERVER_ERROR,
         }

@@ -15,3 +15,9 @@ export class NotAuthorized extends Error {
     super("not authorized");
   }
 }
+
+export class NotFound extends Error {
+  constructor(msg: string) {
+    super(msg);
+  }
+}

@@ -48,11 +48,10 @@ export const useGroupStore = defineStore("group", () => {
     );
   };
 
-  const deleteUserFrom = async (id: number, payload: AddGroupPayload): Promise<void> => {
+  const deleteUserFrom = async (id: number, user_id: number): Promise<void> => {
     return await ApiService.makeAuthenticatedApiRequest<void>(
       "delete",
-      `api/groups/${id}/users`,
-      payload,
+      `api/groups/${id}/users/${user_id}`,
     );
   };
 

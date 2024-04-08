@@ -1,6 +1,6 @@
 import { useAuthStore } from "@/stores/auth_store";
-import { BadCreditentials } from "@/errors/auth_errors";
-import { ApiError, ApiUsage } from "@/errors/api_errors";
+import { BadCreditentials, NotFound } from "@/errors/auth_errors";
+import { ApiError, ApiUsage, UnprocessableEntity } from "@/errors/api_errors";
 import axios from "axios";
 import type { AxiosResponse } from "axios";
 import { useEnvStore } from "@/stores/env_store";
@@ -31,10 +31,17 @@ export const ApiService = {
               },
             });
             break;
+          case "delete":
+            res = await axios.delete(envStore.app_base + uri, {
+              validateStatus: (s) => s < 500,
+              headers: {
+                Authorization: `Bearer ${authStore.getToken()}`,
+              },
+            });
+            break;
           case "post":
           case "patch":
-          case "delete":
-            res = await method_binding[method as "post" | "patch" | "delete"](
+            res = await method_binding[method as "post" | "patch"](
               envStore.app_base + uri,
               payload,
               {
@@ -57,13 +64,23 @@ export const ApiService = {
         throw new ApiUsage();
       }
       if (res.status === 200) {
-        if (res.headers["X-Refresh-Token"] !== undefined) {
-          const new_token = res.headers["X-Refresh-Token"];
+        console.log(res.headers);
+        if (res.headers["x-refresh-token"] !== undefined) {
+          const new_token = res.headers["x-refresh-token"] as string;
           authStore.setToken(new_token);
         }
         return res.data;
       }
-      throw new BadCreditentials(); // shouldn't happen except if the user got revoked between isAuth request and this one.
+      switch (res.status) {
+        case 403:
+          throw new BadCreditentials();
+        case 404:
+          throw new NotFound(res.data as string);
+        case 422:
+          throw new UnprocessableEntity(res.data as string);
+        default:
+          throw new ApiError();
+      }
     } else {
       throw new BadCreditentials();
     }

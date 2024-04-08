@@ -5,6 +5,7 @@ import { BadCreditentials } from "@/errors/auth_errors";
 import { ApiError } from "@/errors/api_errors";
 import { ref } from "vue";
 import { ApiService } from "@/helpers/api_service";
+
 type AuthResponse = {
   jwt: string;
 };
@@ -59,7 +60,8 @@ export const useAuthStore = defineStore("auth", () => {
       authed.value = true;
       return status === 200;
     } catch (e) {
-      throw new ApiError();
+      logOut();
+      return false;
     }
   };
 

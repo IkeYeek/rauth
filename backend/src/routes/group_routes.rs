@@ -87,13 +87,12 @@ pub(crate) async fn add_user_to_group(
 
 pub(crate) async fn delete_user_from_group(
     db: web::Data<StorageState>,
-    path: web::Path<i32>,
-    payload: web::Json<AddGroupPayload>,
+    path: web::Path<(i32, i32)>,
 ) -> Result<&'static str, ApiError> {
     let mut db = try_get_connection(&db)?;
-    let group_id = path.into_inner();
+    let (group_id, user_id) = path.into_inner();
     let group = Group::get(&mut db, group_id)?;
-    let user = User::get(&mut db, payload.user_id)?;
+    let user = User::get(&mut db, user_id)?;
     GroupUser::remove_user_from_group(&mut db, &user, &group)?;
     Ok("removed.")
 }

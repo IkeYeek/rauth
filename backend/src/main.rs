@@ -67,6 +67,7 @@ async fn main() -> std::io::Result<()> {
             .allowed_origin("http://localhost:5173")
             .allowed_methods(vec!["GET", "POST", "PATCH", "DELETE", "OPTION"])
             .allow_any_header()
+            .expose_any_header()  // penser à exposer X-Refresh-Token
             .max_age(3600); // TODO change this
         App::new()
             .wrap(cors)
@@ -126,10 +127,11 @@ async fn main() -> std::io::Result<()> {
                                             .route(web::delete().to(delete_group)),
                                     )
                                     .service(
-                                        web::resource("/users/")
-                                            .route(web::get().to(list_users_from_group))
-                                            .route(web::post().to(add_user_to_group))
-                                            .route(web::delete().to(delete_user_from_group)),
+                                        web::scope("/users")
+                                            .service(web::resource("/")
+                                                .route(web::get().to(list_users_from_group))
+                                                .route(web::post().to(add_user_to_group)))
+                                            .service(web::resource("/{user_id}/").route(web::delete().to(delete_user_from_group))),
                                     ),
                             ),
                     )

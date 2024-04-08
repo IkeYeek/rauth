@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { ref } from "vue";
 import { useAuthStore } from "@/stores/auth_store";
+import { useRoute, useRouter } from "vue-router";
 
 const loading = ref(false);
 const error = ref<string | undefined>(undefined);
@@ -9,7 +10,7 @@ const login = ref("");
 const password = ref("");
 
 const authStore = useAuthStore();
-
+const route = useRoute();
 const tryAuth = async (e: MouseEvent) => {
   e.preventDefault();
   error.value = undefined;
@@ -25,6 +26,11 @@ const tryAuth = async (e: MouseEvent) => {
   try {
     await authStore.tryAuth(login.value, password.value);
     login.value = "";
+    let origin = route.query.origin;
+    if (typeof origin === "string" && origin.startsWith("http")) { // ???
+      window.location.href = origin;
+    }
+
   } catch (e) {
     error.value = e as unknown as string;
   } finally {
@@ -36,7 +42,7 @@ const tryAuth = async (e: MouseEvent) => {
 
 <template>
   <div id="parent">
-    <img src="https://ike.icu/assets/logo-mT7adExh.png" alt=" logo" id="logo" />
+    <img src="https://ike.icu/assets/logo-mT7adExh.png" alt="logo" id="logo" />
     <form id="form">
       <template v-if="loading"> loading...</template>
       <template v-else-if="authStore.authed"
@@ -64,8 +70,6 @@ const tryAuth = async (e: MouseEvent) => {
 
 <style scoped>
 #parent {
-  background-color: #231531bf;
-  border-radius: 5px;
   display: flex;
   flex-direction: column;
   max-width: 400px;

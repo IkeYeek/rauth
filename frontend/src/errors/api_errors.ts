@@ -9,3 +9,9 @@ export class ApiUsage extends Error {
     super("you either tried to play too hard or i suck at programming lol either way rip bozo");
   }
 }
+
+export class UnprocessableEntity extends Error {
+  constructor(msg: string) {
+    super(msg);
+  }
+}

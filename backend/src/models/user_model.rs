@@ -37,6 +37,9 @@ pub(crate) struct User {
 
 impl User {
     pub(crate) fn create(db: &mut SqliteConnection, u: &NewUser) -> Result<User, ApiError> {
+        if u.hash.len() < 4 {
+            return Err(ApiError::User)
+        }
         let hashed_new_user = NewUser {
             login: u.login.clone(),
             hash: match bcrypt::hash(&u.hash, 12) {
@@ -57,7 +60,7 @@ impl User {
                         db,
                         &created_user,
                         &Role {
-                            role: "root".to_string(),
+                            role: "user".to_string(),
                         },
                     )?;
                     Ok(created_user)
@@ -85,7 +88,11 @@ impl User {
             .first(&mut *db)
         {
             Ok(read_user) => Ok(read_user),
-            Err(_) => Err(ApiError::User),
+            Err(diesel::NotFound) => Err(ApiError::UserNotFound),
+            Err(e) => {
+                error!("{e:?}");
+                Err(ApiError::Internal)
+            }
         }
     }
 
@@ -130,6 +137,10 @@ impl User {
         for group in Self::get_groups(db, user)? {
             GroupUser::remove_user_from_group(db, user, &group)?;
         }
+        if let Err(e) = diesel::delete(crate::schema::roles_users::dsl::roles_users).filter(crate::schema::roles_users::dsl::user_id.eq(user.id)).execute(db) {
+            error!("{e:?}");
+            return Err(ApiError::Internal);
+        };
         match diesel::delete(users.filter(id.eq(user.id))).execute(db) {
             Ok(_) => Ok(()),
             Err(_) => Err(ApiError::Internal),

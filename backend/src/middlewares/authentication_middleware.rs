@@ -10,6 +10,7 @@ use futures::FutureExt;
 use log::error;
 use std::future::{ready, Ready};
 use std::rc::Rc;
+use std::str::FromStr;
 use std::task::{Context, Poll};
 
 pub struct AuthenticationMiddleware<S> {
@@ -114,7 +115,13 @@ where
             let mut resp: ServiceResponse = srv.call(req).await?;
             if refresh_cookie {
                 resp.headers_mut().insert(
-                    HeaderName::from_static("X-Refresh-Token"),
+                    match HeaderName::from_str("X-Refresh-Token") {
+                        Ok(v) => v,
+                        Err(e) => {
+                            error!("{e:?}");
+                            return Err(actix_web::Error::from(ApiError::Internal));
+                        }
+                    },
                     match HeaderValue::from_str(&claims.token) {
                         Ok(v) => v,
                         Err(e) => {
