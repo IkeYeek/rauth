@@ -60,8 +60,10 @@ export const useAuthStore = defineStore("auth", () => {
       authed.value = true;
       return status === 200;
     } catch (e) {
-      logOut();
-      return false;
+      if (e instanceof BadCreditentials) {
+        logOut();
+      }
+      throw new ApiError();
     }
   };
 

@@ -1,15 +1,25 @@
 <script async setup lang="ts">
 import { RouterView } from "vue-router";
 import { useAuthStore } from "@/stores/auth_store";
+import { ref } from "vue";
 
 const authStore = useAuthStore();
-await authStore.isAuth();
+const hasError = ref(false);
+try {
+  await authStore.isAuth();
+} catch (e) {
+  hasError.value = true;
+  console.error(e);
+}
 </script>
 
 <template>
   <main>
     <div>
-      <RouterView />
+      <RouterView v-if="!hasError" />
+      <template v-else>
+        Couldn't connect to API.
+      </template>
     </div>
   </main>
 </template>

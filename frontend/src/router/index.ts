@@ -23,7 +23,13 @@ const router = createRouter({
 });
 router.beforeEach(async (to, from) => {
   const authStore = useAuthStore();
-  const authenticated = await authStore.isAuth();
+  let authenticated = false;
+  try {
+    authenticated = await authStore.isAuth();
+  } catch (e) {
+    console.error(e);
+    //TODO redirect to 500
+  }
   if (!authenticated && to.name !== "auth") {
     return {
       name: "auth",
