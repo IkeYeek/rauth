@@ -6,6 +6,14 @@ import type { AxiosResponse } from "axios";
 import { useEnvStore } from "@/stores/env_store";
 
 export const ApiService = {
+  /**
+   * Generate an authenticated API request based on the method, URI, and payload.
+   *
+   * @param {"get" | "post" | "patch" | "delete"} method - The HTTP method for the request.
+   * @param {string} uri - The URI to make the request to.
+   * @param {object} payload - The payload to send with the request.
+   * @return {Promise<T>} The response data from the API request.
+   */
   makeAuthenticatedApiRequest: async <T>(
     method: "get" | "post" | "patch" | "delete",
     uri: string,
@@ -64,7 +72,6 @@ export const ApiService = {
         throw new ApiUsage();
       }
       if (res.status === 200) {
-        console.log(res.headers);
         if (res.headers["x-refresh-token"] !== undefined) {
           const new_token = res.headers["x-refresh-token"] as string;
           authStore.setToken(new_token);

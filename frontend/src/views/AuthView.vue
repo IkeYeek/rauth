@@ -27,10 +27,10 @@ const tryAuth = async (e: MouseEvent) => {
     await authStore.tryAuth(login.value, password.value);
     login.value = "";
     let origin = route.query.origin;
-    if (typeof origin === "string" && origin.startsWith("http")) { // ???
+    if (typeof origin === "string" && origin.startsWith("http")) {
+      // ???
       window.location.href = origin;
     }
-
   } catch (e) {
     error.value = e as unknown as string;
   } finally {
@@ -46,10 +46,9 @@ const tryAuth = async (e: MouseEvent) => {
     <form id="form">
       <template v-if="loading"> loading...</template>
       <template v-else-if="authStore.authed"
-      ><p>Already authenticated</p>
+        ><p>Already authenticated</p>
         <button @click="authStore.logOut()">logout</button>
-      </template
-      >
+      </template>
       <template v-else>
         <p class="error" v-if="error !== undefined">{{ error }}</p>
         <label for="login">login: </label>

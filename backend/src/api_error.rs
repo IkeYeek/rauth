@@ -33,7 +33,7 @@ pub enum ApiError {
     #[display(fmt = "Couldn't validate jwt")]
     Jwt,
     #[display(fmt = "Cannot delete root user !")]
-    CantDeleteRoot
+    CantDeleteRoot,
 }
 
 impl ResponseError for ApiError {

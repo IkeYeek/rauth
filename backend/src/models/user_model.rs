@@ -38,7 +38,7 @@ pub(crate) struct User {
 impl User {
     pub(crate) fn create(db: &mut SqliteConnection, u: &NewUser) -> Result<User, ApiError> {
         if u.hash.len() < 4 {
-            return Err(ApiError::User)
+            return Err(ApiError::User);
         }
         let hashed_new_user = NewUser {
             login: u.login.clone(),
@@ -137,7 +137,10 @@ impl User {
         for group in Self::get_groups(db, user)? {
             GroupUser::remove_user_from_group(db, user, &group)?;
         }
-        if let Err(e) = diesel::delete(crate::schema::roles_users::dsl::roles_users).filter(crate::schema::roles_users::dsl::user_id.eq(user.id)).execute(db) {
+        if let Err(e) = diesel::delete(crate::schema::roles_users::dsl::roles_users)
+            .filter(crate::schema::roles_users::dsl::user_id.eq(user.id))
+            .execute(db)
+        {
             error!("{e:?}");
             return Err(ApiError::Internal);
         };

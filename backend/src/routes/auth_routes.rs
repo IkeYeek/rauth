@@ -78,7 +78,6 @@ pub(crate) async fn has_access(
     }
 }
 
-pub(crate) async fn is_auth(
-) -> Result<&'static str, ApiError> {
+pub(crate) async fn is_auth() -> Result<&'static str, ApiError> {
     Ok("authed")
 }

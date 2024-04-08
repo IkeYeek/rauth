@@ -1,7 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router";
-import AuthView from "@/views/AuthView.vue";
 import { useAuthStore } from "@/stores/auth_store";
-import UsersView from "@/views/UsersView.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -9,12 +7,17 @@ const router = createRouter({
     {
       name: "auth",
       path: "/auth",
-      component: AuthView,
+      component: () => import("@/views/AuthView.vue"),
     },
     {
       name: "users",
       path: "/users",
-      component: UsersView,
+      component: () => import("@/views/UsersView.vue"),
+    },
+    {
+      name: "groups",
+      path: "/groups",
+      component: () => import("@/views/GroupsView.vue"),
     },
   ],
 });

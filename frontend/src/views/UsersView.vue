@@ -11,7 +11,6 @@ const userStore = useUserStore();
 
 const createUserDialog = ref(false);
 const deleteUserError = ref<undefined | string>(undefined);
-
 const editUserDialog = ref(false);
 const editedUser = ref<undefined | User>(undefined);
 
@@ -38,9 +37,16 @@ const columns = ref<QTableColumn[]>([
     label: "Groups",
     align: "center",
     field: (row: User) => row.groups,
-    format: (gs: Array<Group>) => gs.reduce((acc, curr, idx) => {
-      return acc + `${idx > 0 ? ", " : ""} ${curr.name}`;
-    }, ""),
+    format: (gs: Array<Group>) => {
+      const maxGroupsToShow = 7;
+      const groupsToShow = gs.slice(0, maxGroupsToShow);
+      const remainingGroups = gs.length - maxGroupsToShow;
+      const formattedGroups = groupsToShow.reduce((acc, curr, idx) => {
+        return acc + `${idx > 0 ? ", " : ""} ${curr.name}`;
+      }, "");
+
+      return remainingGroups > 0 ? `${formattedGroups}, ...` : formattedGroups;
+    },
   },
   {
     name: "actions",
@@ -54,11 +60,14 @@ const pagination = ref({
   rowsPerPage: 0,
 });
 
-watch(() => createUserDialog.value, (value) => {
-  if (!value) {
-    editedUser.value = undefined;
-  }
-});
+watch(
+  () => createUserDialog.value,
+  (value) => {
+    if (!value) {
+      editedUser.value = undefined;
+    }
+  },
+);
 
 onMounted(async () => {
   users.value = await userStore.getAll();
@@ -68,15 +77,14 @@ const handleDeleteUser = async (toRemove: User) => {
   deleteUserError.value = undefined;
   try {
     await userStore.remove(toRemove.id);
-    users.value = users.value.filter(user => user !== toRemove);
+    users.value = users.value.filter((user) => user !== toRemove);
   } catch (e) {
     error.value = (e as Error).message;
   }
 };
 
 const handleUpdatedUser = async (updatedUser: User) => {
-  const newValue = await userStore.get(updatedUser.id);
-  users.value = users.value.map(user => user.id === updatedUser.id ? newValue : user);
+  users.value = users.value.map((user) => (user.id === updatedUser.id ? updatedUser : user));
   editUserDialog.value = false;
 };
 
@@ -90,10 +98,9 @@ const openUser = async (user_id: number) => {
     editedUser.value = await userStore.get(user_id);
     editUserDialog.value = true;
   } catch (e) {
-    error.value = (e as Error).message;
+    error.value = e as string;
   }
 };
-
 </script>
 
 <template>
@@ -102,36 +109,51 @@ const openUser = async (user_id: number) => {
       <q-table
         style="height: 400px"
         dark
-        flat bordered
+        flat
+        bordered
         title="Users"
         :rows="users"
         :columns="columns"
         row-key="id"
         virtual-scroll
         :pagination="pagination"
-        :rows-per-page-options="[0]">
+        :rows-per-page-options="[0]"
+      >
         <template #top-right>
           <p class="error" v-if="error">{{ error }}</p>
         </template>
         <template v-slot:body-cell-actions="props">
           <q-td :props="props">
-            <q-btn icon="edit" @click="() => {openUser(props.row.id)}">admin</q-btn>
-            <q-btn icon="delete" @click="handleDeleteUser(props.row)">delete user</q-btn>
+            <q-btn
+              flat
+              color="warning"
+              icon="edit"
+              @click="
+                () => {
+                  openUser(props.row.id);
+                }
+              "
+            />
+            <q-btn flat color="negative" icon="delete" @click="handleDeleteUser(props.row)" />
           </q-td>
         </template>
         <template #bottom>
           <div class="sectionToTheRight">
-            <q-btn icon="add" @click="createUserDialog = true"></q-btn>
+            <q-btn flat icon="person_add" @click="createUserDialog = true" />
           </div>
         </template>
       </q-table>
     </template>
   </div>
   <q-dialog v-model="createUserDialog">
-    <CreateUserComponent @created="user => handleCreatedUser(user)" />
+    <CreateUserComponent @created="(user) => handleCreatedUser(user)" />
   </q-dialog>
   <q-dialog v-model="editUserDialog">
-    <EditUserComponent :user="editedUser" v-if="editedUser !== undefined" @updated="user => handleUpdatedUser(user)" />
+    <EditUserComponent
+      :user="editedUser"
+      v-if="editedUser !== undefined"
+      @updated="(user) => handleUpdatedUser(user)"
+    />
     <template v-else>Error, user to edit is undefined !</template>
   </q-dialog>
 </template>
@@ -139,11 +161,5 @@ const openUser = async (user_id: number) => {
 <style scoped>
 #parent {
   min-width: 400px;
-}
-
-.sectionToTheRight {
-  width: 100%;
-  display: flex;
-  justify-content: end;
 }
 </style>

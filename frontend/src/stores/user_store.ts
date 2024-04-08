@@ -9,7 +9,7 @@ type NewUser = {
 
 export type User = NewUser & {
   id: number;
-  groups?: Array<Group>
+  groups?: Array<Group>;
 };
 
 export type UpdateUserPayload = {
@@ -24,12 +24,14 @@ export const useUserStore = defineStore("user", () => {
 
   const getAll = async (): Promise<Array<User>> => {
     const users = await ApiService.makeAuthenticatedApiRequest<Array<User>>("get", "api/users");
-    return await Promise.all(users.map(async (user) => {
-      return {
-        ...user,
-        groups: await getUserGroups(user.id),
-      };
-    }));
+    return await Promise.all(
+      users.map(async (user) => {
+        return {
+          ...user,
+          groups: await getUserGroups(user.id),
+        };
+      }),
+    );
   };
 
   const get = async (user_id: number): Promise<User> => {
@@ -40,12 +42,20 @@ export const useUserStore = defineStore("user", () => {
     };
   };
 
-  const update = async (user_id: number, payload: UpdateUserPayload, groups: Array<Group>): Promise<User> => {
+  const update = async (
+    user_id: number,
+    payload: UpdateUserPayload,
+    groups: Array<Group>,
+  ): Promise<User> => {
     const userGroups = await getUserGroups(user_id);
-    const newGroups = groups.filter(group => !userGroups.some(g => g.id === group.id));
-    const leftGroups = userGroups.filter(group => !groups.some(g => g.id === group.id));
-    await Promise.all(newGroups.map(async (newGroup) => await groupStore.addUserTo(newGroup.id, { user_id })));
-    await Promise.all(leftGroups.map(async (leftGroup) => await groupStore.deleteUserFrom(leftGroup.id, user_id)));
+    const newGroups = groups.filter((group) => !userGroups.some((g) => g.id === group.id));
+    const leftGroups = userGroups.filter((group) => !groups.some((g) => g.id === group.id));
+    await Promise.all(
+      newGroups.map(async (newGroup) => await groupStore.addUserTo(newGroup.id, { user_id })),
+    );
+    await Promise.all(
+      leftGroups.map(async (leftGroup) => await groupStore.deleteUserFrom(leftGroup.id, user_id)),
+    );
     return await ApiService.makeAuthenticatedApiRequest<User>(
       "patch",
       `api/users/${user_id}`,

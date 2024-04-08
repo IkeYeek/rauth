@@ -8,39 +8,23 @@ import { type Group, useGroupStore } from "@/stores/group_store";
 type EditUserProps = {
   user: User;
 };
-const groupStore = useGroupStore();
-
 const emits = defineEmits<{
   (e: "updated", user: User): void;
 }>();
+const props = defineProps<EditUserProps>();
+const user = ref<User>(props.user);
+const error = ref<string | undefined>(undefined);
 
-const options = ref<Array<Group>>([]);
-const updateAvailableGroups = async () => {
-  const groups = await groupStore.getAll();
-  options.value = groups.filter(group => {
-    return !user.value.groups!.some(g => g.id === group.id);
-  });
-};
+const groupStore = useGroupStore();
+const userStore = useUserStore();
+
+const userNewPassword = ref<string>("");
+const userGroups = ref<Array<Group>>([]);
 const groupsModel = ref(null);
 
-const filterFn = (val: string, update: (cb: () => void) => void, _: () => void) => {
-  update(() => {
-    const needle = val.toLowerCase();
-    options.value = options.value.filter(v => v.name.toLowerCase().indexOf(needle) > -1);
-  });
-};
-
-
-const addUserToGroup = async () => {
-  user.value.groups!.push(groupsModel.value!);
-  groupsModel.value = null;
-  await updateAvailableGroups();
-};
-
-const removeUserFromGroup = async (group: Group) => {
-  user.value.groups = user.value.groups!.filter(g => g.id !== group.id);
-  await updateAvailableGroups();
-};
+const pagination = ref({
+  rowsPerPage: 0,
+});
 const columns = ref<QTableColumn[]>([
   {
     name: "id",
@@ -58,16 +42,30 @@ const columns = ref<QTableColumn[]>([
     field: () => "Actions",
   },
 ]);
+const filterFn = (val: string, update: (cb: () => void) => void, _: () => void) => {
+  update(() => {
+    const needle = val.toLowerCase();
+    userGroups.value = userGroups.value.filter((v) => v.name.toLowerCase().indexOf(needle) > -1);
+  });
+};
 
-const userStore = useUserStore();
+const updateAvailableGroups = async () => {
+  const groups = await groupStore.getAll();
+  userGroups.value = groups.filter((group) => {
+    return !user.value.groups!.some((g) => g.id === group.id);
+  });
+};
 
-const error = ref<string | undefined>(undefined);
+const addUserToGroup = async () => {
+  user.value.groups!.push(groupsModel.value!);
+  groupsModel.value = null;
+  await updateAvailableGroups();
+};
 
-let userNewPassword = ref<string>("");
-
-const props = defineProps<EditUserProps>();
-const user = ref<User>(props.user);
-
+const removeUserFromGroup = async (group: Group) => {
+  user.value.groups = user.value.groups!.filter((g) => g.id !== group.id);
+  await updateAvailableGroups();
+};
 const updateUser = async () => {
   error.value = undefined;
   let payload: UpdateUserPayload = {
@@ -81,19 +79,13 @@ const updateUser = async () => {
     await userStore.update(user.value.id, payload, user.value.groups!);
     emits("updated", user.value);
   } catch (e) {
-    error.value = (e as Error).message;
+    error.value = e as string;
   }
 };
 
-const pagination = ref({
-  rowsPerPage: 0,
+onMounted(async () => {
+  await updateAvailableGroups();
 });
-
-onMounted(() => {
-  updateAvailableGroups();
-});
-
-
 </script>
 
 <template>
@@ -107,20 +99,45 @@ onMounted(() => {
       <q-input dark v-model="userNewPassword" label="New Password" />
     </q-card-section>
     <q-card-section>
-      <q-table dark flat bordered title="Groups" :rows="[...user.groups]" :columns="columns" row-key="id" virtual-scroll
-               :pagination="pagination"
-               :rows-per-page-options="[0]">
+      <q-table
+        dark
+        flat
+        bordered
+        title="Groups"
+        :rows="[...user.groups]"
+        :columns="columns"
+        row-key="id"
+        virtual-scroll
+        :pagination="pagination"
+        :rows-per-page-options="[0]"
+      >
         <template #bottom-row>
           <q-btn-group>
-            <q-select filled v-model="groupsModel" dark use-input hide-selected input-debounce="0" fill-input
-                      :options="options" @filter="filterFn" hint="user group" label="user group" option-value="id"
-                      option-label="name" />
+            <q-select
+              filled
+              v-model="groupsModel"
+              dark
+              use-input
+              hide-selected
+              input-debounce="0"
+              fill-input
+              :options="userGroups"
+              @filter="filterFn"
+              hint="user group"
+              label="user group"
+              option-value="id"
+              option-label="name"
+            />
             <q-btn icon="add" @click="addUserToGroup" dark />
           </q-btn-group>
         </template>
         <template #body-cell-actions="props">
           <q-td :props="props">
-            <q-btn icon="remove_circle_outline" @click="() => removeUserFromGroup(props.row)" dark />
+            <q-btn
+              icon="remove_circle_outline"
+              @click="() => removeUserFromGroup(props.row)"
+              dark
+            />
           </q-td>
         </template>
       </q-table>
@@ -131,6 +148,4 @@ onMounted(() => {
   </q-card>
 </template>
 
-<style scoped>
-
-</style>
+<style scoped></style>

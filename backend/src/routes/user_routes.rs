@@ -1,15 +1,15 @@
 use crate::api_error::ApiError;
 use crate::helpers::try_get_connection;
 use crate::models::group_model::Group;
+use crate::models::group_user_model::GroupUser;
 use crate::models::jwt_model::JWTInternal;
+use crate::models::role_model::Role;
+use crate::models::role_user_model::RoleUser;
 use crate::models::user_model::{NewUser, User};
 use crate::StorageState;
 use actix_web::web;
 use log::error;
 use serde::{Deserialize, Serialize};
-use crate::models::group_user_model::GroupUser;
-use crate::models::role_model::Role;
-use crate::models::role_user_model::RoleUser;
 
 pub(crate) async fn create_user(
     form_data: web::Json<NewUser>,
@@ -18,7 +18,7 @@ pub(crate) async fn create_user(
     let mut db = try_get_connection(&db)?;
     let user = User::create(&mut db, &form_data.0)?;
     let public_group = &Group::get(&mut db, 1)?;
-    GroupUser::add_user_to_group(&mut db, &user, public_group)?;  // group public with id 0 should always exist
+    GroupUser::add_user_to_group(&mut db, &user, public_group)?; // group public with id 0 should always exist
     Ok(web::Json(user))
 }
 
@@ -65,7 +65,7 @@ pub(crate) async fn update_user(
             Err(e) => {
                 error!("{e:?}");
                 return Err(ApiError::Internal);
-            },
+            }
         };
     };
     User::update_user(&mut db, &user_retrieved)?;

@@ -40,9 +40,7 @@ const handleCreateUser = async () => {
       <q-input dark type="password" v-model="createUserPassword" />
     </q-card-section>
     <q-card-section class="sectionToTheRight">
-      <q-btn icon="add" @click="handleCreateUser" />
-    </q-card-section>
-    <q-card-section>
+      <q-btn icon="person_add" @click="handleCreateUser" />
     </q-card-section>
   </q-card>
 </template>
