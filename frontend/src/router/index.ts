@@ -5,6 +5,11 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
+      name: "home",
+      path: "/",
+      component: () => import("@/views/HomeView.vue"),
+    },
+    {
       name: "auth",
       path: "/auth",
       component: () => import("@/views/AuthView.vue"),
@@ -18,6 +23,18 @@ const router = createRouter({
       name: "groups",
       path: "/groups",
       component: () => import("@/views/GroupsView.vue"),
+    },
+    {
+      path: "/logout",
+      name: "logout",
+      component: () => null,
+      beforeEnter(to, from, next) {
+        useAuthStore().logOut();
+        if (from.meta.requiresAuth) {
+          return next("/");
+        }
+        location.reload();
+      },
     },
   ],
 });
