@@ -10,7 +10,6 @@ try {
   await authStore.isAuth();
 } catch (e) {
   hasError.value = true;
-  console.error(e);
 }
 </script>
 

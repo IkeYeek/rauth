@@ -4,7 +4,6 @@ import { useEnvStore } from "@/stores/env_store";
 import { BadCreditentials } from "@/errors/auth_errors";
 import { ApiError } from "@/errors/api_errors";
 import { ref } from "vue";
-import { ApiService } from "@/helpers/api_service";
 
 type AuthResponse = {
   jwt: string;
@@ -57,9 +56,10 @@ export const useAuthStore = defineStore("auth", () => {
         },
         validateStatus: (s) => s < 500,
       });
-      authed.value = true;
+      authed.value = status === 200;
       return status === 200;
     } catch (e) {
+      console.error(e);
       if (e instanceof BadCreditentials) {
         logOut();
       }

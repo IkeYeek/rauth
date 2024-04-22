@@ -1,6 +1,7 @@
 use actix_web::http::header::ContentType;
 use actix_web::http::StatusCode;
 use actix_web::{HttpResponse, ResponseError};
+use actix_web::web::Header;
 use derive_more::{Display, Error};
 
 #[derive(Debug, Display, Error)]
@@ -56,6 +57,7 @@ impl ResponseError for ApiError {
     fn error_response(&self) -> HttpResponse {
         HttpResponse::build(self.status_code())
             .insert_header(ContentType::html())
+            .insert_header(("Access-Control-Allow-Origin", "https://localhost:5173"))
             .body(self.to_string())
     }
 }

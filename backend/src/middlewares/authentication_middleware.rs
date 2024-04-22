@@ -108,6 +108,7 @@ where
             Err(e) => return Box::pin(ready(Err(actix_web::Error::from(e)))),
         };
         drop(db);
+        
 
         let srv = Rc::clone(&self.service);
         async move {

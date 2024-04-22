@@ -1,3 +1,4 @@
+use crate::routes::user_routes::get_user_data;
 use crate::middlewares::authentication_middleware::RequireAuth;
 use crate::middlewares::super_user::RequireSuperUser;
 use crate::middlewares::target_user_or_super_user_middleware::TargetUserOrSuperUser;
@@ -64,17 +65,17 @@ async fn main() -> std::io::Result<()> {
     };
     HttpServer::new(move || {
         let cors = Cors::default()
-            .allowed_origin("http://localhost:5173")
-            .allowed_methods(vec!["GET", "POST", "PATCH", "DELETE", "OPTION"])
+            .allowed_methods(["GET", "POST", "PATCH", "DELETE", "OPTIONS"])
             .allow_any_header()
-            .expose_any_header() // penser à exposer X-Refresh-Token
-            .max_age(3600); // TODO change this
+            .allowed_origin("http://localhost:5173")
+            .supports_credentials();// penser à exposer X-Refresh-Token; // TODO change this
         App::new()
             .wrap(cors)
             .app_data(storage.clone())
             .app_data(web::Data::new(keyset.clone()))
             .wrap(NormalizePath::new(TrailingSlash::Always))
             .wrap(Logger::new("%r - %s - %a %{User-Agent}i"))
+
             .service(
                 web::scope("/auth")
                     .service(
@@ -82,6 +83,7 @@ async fn main() -> std::io::Result<()> {
                             .route(web::get().to(is_auth).wrap(RequireAuth))
                             .route(web::post().to(auth)),
                     )
+
                     .service(web::resource("/has_access/").route(web::get().to(has_access))),
             )
             .service(
@@ -89,6 +91,7 @@ async fn main() -> std::io::Result<()> {
                     .wrap(RequireAuth)
                     .service(
                         web::scope("/users")
+                            .service(web::resource("/me/").route(web::get().to(get_user_data)).wrap(RequireAuth))
                             .service(
                                 web::resource("/")
                                     .wrap(RequireSuperUser)

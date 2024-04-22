@@ -2,12 +2,12 @@ use crate::api_error::ApiError;
 use crate::helpers::try_get_connection;
 use crate::models::group_model::Group;
 use crate::models::group_user_model::GroupUser;
-use crate::models::jwt_model::JWTInternal;
+use crate::models::jwt_model::{Claims, JWTInternal};
 use crate::models::role_model::Role;
 use crate::models::role_user_model::RoleUser;
-use crate::models::user_model::{NewUser, User};
+use crate::models::user_model::{NewUser, SafeUser, User};
 use crate::StorageState;
-use actix_web::web;
+use actix_web::{HttpMessage, HttpRequest, web};
 use log::error;
 use serde::{Deserialize, Serialize};
 
@@ -97,4 +97,25 @@ pub(crate) async fn get_user_groups(
     let id = path.into_inner();
     let user = User::get(&mut db, id)?;
     Ok(web::Json(User::get_groups(&mut db, &user)?))
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct UserDataResponsePayload {
+    user: SafeUser,
+    role: Role,
+    groups: Vec<Group>,
+}
+
+pub(crate) async fn get_user_data<'a>(
+    req: HttpRequest,
+) -> Result<web::Json<UserDataResponsePayload>, ApiError> {
+    let claims = match req.extensions().get::<Claims>() {
+        Some(claims) => claims.clone(),
+        None => return Err(ApiError::Internal),
+    };
+    Ok(web::Json(UserDataResponsePayload {
+        user: claims.user.into(),
+        groups: claims.groups,
+        role: claims.role,
+    }))
 }

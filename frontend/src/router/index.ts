@@ -25,8 +25,13 @@ const router = createRouter({
       component: () => import("@/views/GroupsView.vue"),
     },
     {
-      path: "/logout",
+      name: "account",
+      path: "/account",
+      component: () => import("@/views/AccountView.vue"),
+    },
+    {
       name: "logout",
+      path: "/logout",
       component: () => null,
       beforeEnter(to, from, next) {
         useAuthStore().logOut();
@@ -44,7 +49,6 @@ router.beforeEach(async (to, from) => {
   try {
     authenticated = await authStore.isAuth();
   } catch (e) {
-    console.error(e);
     //TODO redirect to 500
   }
   if (!authenticated && to.name !== "auth") {

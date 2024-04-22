@@ -16,6 +16,15 @@ export type UpdateUserPayload = {
   new_login: string | undefined;
   new_hash: string | undefined;
 };
+export type Role = {
+  id: number;
+  role: string;
+}
+export type UserDataResponsePayload = {
+  user: User;
+  role: Role;
+  groups: Array<Group>;
+}
 export const useUserStore = defineStore("user", () => {
   const groupStore = useGroupStore();
   const create = async (to_create: NewUser): Promise<User> => {
@@ -64,11 +73,15 @@ export const useUserStore = defineStore("user", () => {
   };
 
   const remove = async (user_id: number): Promise<void> => {
-    return await ApiService.makeAuthenticatedApiRequest<void>("delete", `api/users/${user_id}`, {});
+    return await ApiService.makeAuthenticatedApiRequest<void>("delete", `api/users/${user_id}`);
   };
 
   const getUserGroups = async (user_id: number): Promise<Array<Group>> => {
     return await ApiService.makeAuthenticatedApiRequest("get", `api/users/${user_id}/groups`);
+  };
+
+  const getUserData = async (): Promise<UserDataResponsePayload> => {
+    return await ApiService.makeAuthenticatedApiRequest<UserDataResponsePayload>("get", "api/users/me");
   };
 
   return {
@@ -78,5 +91,6 @@ export const useUserStore = defineStore("user", () => {
     update,
     remove,
     getUserGroups,
+    getUserData,
   };
 });
