@@ -12,6 +12,8 @@ use std::future::{ready, Ready};
 use std::rc::Rc;
 use std::str::FromStr;
 use std::task::{Context, Poll};
+use actix_web::cookie::Cookie;
+use actix_web::cookie::time::Duration;
 
 pub struct AuthenticationMiddleware<S> {
     service: Rc<S>,
@@ -47,7 +49,7 @@ where
             error!("couldn't access key set");
             return Box::pin(ready(Err(actix_web::Error::from(ApiError::Internal))));
         };
-        let token = match req.headers().get("Authorization") {
+        /*let token = match req.headers().get("Authorization") {
             Some(raw_header) => {
                 if let Ok(token) = raw_header.to_str() {
                     if token.starts_with("Bearer ") {
@@ -60,17 +62,17 @@ where
                 }
             }
             None => return Box::pin(ready(Err(actix_web::Error::from(ApiError::Jwt)))),
-        };
-        /*let token = match req.cookie("jwt") {
+        };*/
+        let token = match req.cookie("jwt") {
             Some(auth) => auth.value().to_string(),
             None => {
                 return Box::pin(ready(Err(actix_web::Error::from(ApiError::Jwt))));
             }
-        };*/
+        };
 
         let mut refresh_cookie = false; // booooooh blatant side effect boooooooh
 
-        let claims = match JWTInternal::validate_jwt(&mut db, token, &key_set.decoding) {
+        let claims = match JWTInternal::validate_jwt(&mut db, &token, &key_set.decoding) {
             Ok(claims) => {
                 let needs_refresh = match JWTInternal::needs_refresh(&mut db, &claims) {
                     Ok(needs_refresh) => {
@@ -115,7 +117,7 @@ where
             req.extensions_mut().insert::<Claims>(claims.claims);
             let mut resp: ServiceResponse = srv.call(req).await?;
             if refresh_cookie {
-                resp.headers_mut().insert(
+                /*resp.headers_mut().insert(
                     match HeaderName::from_str("X-Refresh-Token") {
                         Ok(v) => v,
                         Err(e) => {
@@ -130,14 +132,15 @@ where
                             return Err(actix_web::Error::from(ApiError::Internal));
                         }
                     },
-                );
-                /*let jwt_cookie = Cookie::build("jwt", &claims.token)
+                );*/
+                let jwt_cookie = Cookie::build("jwt", &claims.token)
+                    .path("/")
                     .domain(".localhost.dummy")
                     .max_age(Duration::weeks(1))
                     .finish();
                 if let Err(e) = resp.response_mut().add_cookie(&jwt_cookie) {
                     return Err(actix_web::Error::from(e));
-                }*/
+                }
             }
             Ok(resp)
         }

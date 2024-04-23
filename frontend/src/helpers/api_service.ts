@@ -33,18 +33,20 @@ export const ApiService = {
         switch (method) {
           case "get":
             res = await axios.get(envStore.app_base + uri, {
+              withCredentials: true,
               validateStatus: (s) => s < 500,
-              headers: {
+              /*headers: {
                 Authorization: `Bearer ${authStore.getToken()}`,
-              },
+              },*/
             });
             break;
           case "delete":
             res = await axios.delete(envStore.app_base + uri, {
+              withCredentials: true,
               validateStatus: (s) => s < 500,
-              headers: {
+              /*headers: {
                 Authorization: `Bearer ${authStore.getToken()}`,
-              },
+              },*/
             });
             break;
           case "post":
@@ -53,10 +55,11 @@ export const ApiService = {
               envStore.app_base + uri,
               payload,
               {
+                withCredentials: true,
                 validateStatus: (s) => s < 500,
-                headers: {
+                /*headers: {
                   Authorization: `Bearer ${authStore.getToken()}`,
-                },
+                },*/
               },
             );
             break;
@@ -72,10 +75,10 @@ export const ApiService = {
         throw new ApiUsage();
       }
       if (res.status === 200) {
-        if (res.headers["x-refresh-token"] !== undefined) {
+        /*if (res.headers["x-refresh-token"] !== undefined) {
           const new_token = res.headers["x-refresh-token"] as string;
           authStore.setToken(new_token);
-        }
+        }*/
         return res.data;
       }
       switch (res.status) {

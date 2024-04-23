@@ -64,7 +64,6 @@ const handleDeleteGroup = async (group: Group) => {
   } catch (e) {
     error.value = e as string;
   }
-  groups.value = groups.value.filter((g) => g.id !== group.id);
 };
 
 const handleUpdatedGroup = (updatedGroup: Group) => {

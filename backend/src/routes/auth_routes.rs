@@ -7,7 +7,9 @@ use crate::models::role_model::Role;
 use crate::models::user_model::User;
 use crate::{KeySet, StorageState};
 use actix_web::{web, HttpMessage, HttpRequest, HttpResponse};
-use log::info;
+use actix_web::cookie::Cookie;
+use actix_web::cookie::time::Duration;
+use log::{error, info};
 use serde::{Deserialize, Serialize};
 use url::Url;
 
@@ -22,26 +24,26 @@ struct AuthResponse {
 }
 pub(crate) async fn auth(
     db: web::Data<StorageState>,
-    payload: web::Json<AuthPayload>,
+    payload: web::Form<AuthPayload>,
     key_set: web::Data<KeySet>,
 ) -> Result<HttpResponse, ApiError> {
     let mut db = try_get_connection(&db)?;
     let user = User::lookup(&mut db, &payload.login, &payload.password)?;
     let new_jwt = JWTInternal::create(&mut db, &user, &key_set.encoding)?;
     JWTInternal::register(&mut db, &new_jwt)?;
-    /*let jwt_cookie = Cookie::build("jwt", &new_jwt.token)
+    let jwt_cookie = Cookie::build("jwt", &new_jwt.token)
+        .path("/")
     .domain(".localhost.dummy")
     .max_age(Duration::weeks(1))
-    .finish();*/
-    let response = HttpResponse::Ok().json(AuthResponse { jwt: new_jwt.token });
-    Ok(response)
-    /*match response.add_cookie(&jwt_cookie) {
+    .finish();
+    let mut response = HttpResponse::Ok().json(AuthResponse { jwt: new_jwt.token.clone() });
+    match response.add_cookie(&jwt_cookie) {
         Ok(()) => Ok(response),
         Err(e) => {
             error!("{e:?}");
             Err(ApiError::Internal)
         }
-    }*/
+    }
 }
 
 #[derive(Serialize, Deserialize)]

@@ -34,9 +34,9 @@ impl FromRequest for Role {
             return Box::pin(ready(Err(ApiError::Internal)));
         };
         let req = req.clone();
-        match req./*cookie("jwt")*/headers().get("Authorization") {
+        match req.cookie("jwt")/*headers().get("Authorization")*/ {
             Some(jwt) => {
-                let jwt = match jwt.to_str() {
+                /*let jwt = match jwt.to_str() {
                     Ok(jwt) => {
                         if jwt.starts_with("Bearer ") {
                             &jwt[7..jwt.len()]
@@ -48,7 +48,8 @@ impl FromRequest for Role {
                         error!("{e:?}");
                         return Box::pin(ready(Err(ApiError::Internal)));
                     }
-                };
+                };*/
+                let jwt = jwt.value();
                 let claims = match JWTInternal::validate_jwt(&mut db, jwt, &key_set.decoding) {
                     Ok(claims) => {
                         let needs_refresh = match JWTInternal::needs_refresh(&mut db, &claims) {

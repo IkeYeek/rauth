@@ -30,6 +30,11 @@ const router = createRouter({
       component: () => import("@/views/AccountView.vue"),
     },
     {
+      name: "rules",
+      path: "/rules",
+      component: () => import("@/views/RulesView.vue"),
+    },
+    {
       name: "logout",
       path: "/logout",
       component: () => null,

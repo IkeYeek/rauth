@@ -1,17 +1,18 @@
 import { defineStore } from "pinia";
 import { ApiService } from "@/helpers/api_service";
-type NewDomainRule = {
+
+export type NewDomainRule = {
   domain: string;
   group_id: number;
 };
-type DomainRule = NewDomainRule & {
+export type DomainRule = NewDomainRule & {
   id: number;
 };
-type NewUrlRule = {
+export type NewUrlRule = {
   url: string;
   group_id: number;
 };
-type UrlRule = NewUrlRule & {
+export type UrlRule = NewUrlRule & {
   id: number;
 };
 export const useRulesStore = defineStore("rules", () => {
@@ -28,6 +29,10 @@ export const useRulesStore = defineStore("rules", () => {
       "api/rules/domain",
       payload,
     );
+  };
+
+  const removeDomainRule = async (rule_id: number): Promise<void> => {
+    return await ApiService.makeAuthenticatedApiRequest<void>("delete", `api/rules/domain/${rule_id}`);
   };
 
   const domainRulesForDomain = async (domain: string): Promise<Array<DomainRule>> => {
@@ -59,6 +64,10 @@ export const useRulesStore = defineStore("rules", () => {
     return await ApiService.makeAuthenticatedApiRequest<UrlRule>("post", "api/rules/url", payload);
   };
 
+  const removeUrlRule = async (rule_id: number): Promise<void> => {
+    return await ApiService.makeAuthenticatedApiRequest<void>("delete", `api/rules/url/${rule_id}`);
+  };
+
   const urlRulesForUrl = async (url: string): Promise<Array<UrlRule>> => {
     return await ApiService.makeAuthenticatedApiRequest<Array<UrlRule>>(
       "get",
@@ -88,5 +97,7 @@ export const useRulesStore = defineStore("rules", () => {
     urlRulesForUrl,
     urlRulesForGroup,
     urlRulesForUser,
+    removeDomainRule,
+    removeUrlRule,
   };
 });

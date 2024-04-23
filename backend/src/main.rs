@@ -67,7 +67,9 @@ async fn main() -> std::io::Result<()> {
         let cors = Cors::default()
             .allowed_methods(["GET", "POST", "PATCH", "DELETE", "OPTIONS"])
             .allow_any_header()
+            .expose_any_header()
             .allowed_origin("http://localhost:5173")
+            .allowed_origin("http://localhost.dummy:5173")
             .supports_credentials();// penser à exposer X-Refresh-Token; // TODO change this
         App::new()
             .wrap(cors)
@@ -201,9 +203,11 @@ async fn main() -> std::io::Result<()> {
                                             ),
                                     )
                                     .service(
-                                        web::resource("/{rule_id}")
-                                            .route(web::get().to(url_rule))
-                                            .route(web::delete().to(delete_url_rule)),
+                                        web::scope("/{rule_id}").service(
+                                            web::resource("/")
+                                                .route(web::get().to(url_rule))
+                                                .route(web::delete().to(delete_url_rule)),
+                                        ),
                                     ),
                             ),
                     ),

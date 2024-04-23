@@ -12,13 +12,13 @@ export const useAuthStore = defineStore("auth", () => {
   const envStore = useEnvStore();
   const api_base = useEnvStore().app_base;
   const authed = ref(false);
-  const getToken = (): string | null => {
+  /*const getToken = (): string | null => {
     return localStorage.getItem("jwt");
   };
 
   const setToken = (token: string) => {
     localStorage.setItem("jwt", token);
-  };
+  };*/
 
   const tryAuth = async (login: string, password: string): Promise<void> => {
     try {
@@ -33,7 +33,6 @@ export const useAuthStore = defineStore("auth", () => {
         },
       );
       if (status === 200) {
-        setToken(data.jwt);
         authed.value = true;
         return;
       }
@@ -45,15 +44,12 @@ export const useAuthStore = defineStore("auth", () => {
   };
 
   const isAuth = async (): Promise<boolean> => {
-    const token = getToken();
-    if (token === null) {
-      return false;
-    }
     try {
       const { status } = await axios.get(`${envStore.app_base}auth`, {
-        headers: {
+        /*headers: {
           Authorization: `Bearer ${token}`,
-        },
+        },*/
+        withCredentials: true,
         validateStatus: (s) => s < 500,
       });
       authed.value = status === 200;
@@ -68,15 +64,12 @@ export const useAuthStore = defineStore("auth", () => {
   };
 
   const logOut = (): void => {
-    localStorage.removeItem("jwt");
     authed.value = false;
   };
 
   return {
     tryAuth,
     isAuth,
-    getToken,
-    setToken,
     logOut,
     authed,
   };

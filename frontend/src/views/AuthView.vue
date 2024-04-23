@@ -43,10 +43,10 @@ const tryAuth = async (e: MouseEvent) => {
 <template>
   <div id="parent">
     <img src="https://ike.icu/assets/logo-mT7adExh.png" alt="logo" id="logo" />
-    <form id="form">
+    <form id="form" action="http://localhost.dummy:8080/auth" method="post">
       <template v-if="loading"> loading...</template>
       <template v-else-if="authStore.authed"
-        ><p>Already authenticated</p>
+      ><p>Already authenticated</p>
         <button @click="authStore.logOut()">logout</button>
       </template>
       <template v-else>
@@ -61,7 +61,7 @@ const tryAuth = async (e: MouseEvent) => {
           id="password"
           v-model="password"
         />
-        <input type="submit" value="try auth" @click="tryAuth" />
+        <input type="submit" value="try auth" />
       </template>
     </form>
   </div>
