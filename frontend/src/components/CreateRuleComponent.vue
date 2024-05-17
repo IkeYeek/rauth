@@ -1,5 +1,4 @@
 <script setup lang="ts">
-
 import {
   type DomainRule,
   type NewDomainRule,
@@ -21,7 +20,7 @@ const props = defineProps<{
 const ruleValue = ref("");
 
 const emits = defineEmits<{
-  (e: "created", rule: DomainRule | UrlRule, kind: "DomainRule" | "UrlRule"): void
+  (e: "created", rule: DomainRule | UrlRule, kind: "DomainRule" | "UrlRule"): void;
 }>();
 const handleCreateRule = async () => {
   createRuleError.value = undefined;
@@ -66,9 +65,21 @@ onMounted(async () => {
       <q-input dark type="text" v-model="ruleValue" />
     </q-card-section>
     <q-card-section>
-      <q-select v-model="groupModel" filled dark use-input hide-selected input-debounce="0" fill-input
-                :options="groups" @filter="filterFn" hint="rule group" label="rule group" option-value="id"
-                option-label="name" />
+      <q-select
+        v-model="groupModel"
+        filled
+        dark
+        use-input
+        hide-selected
+        input-debounce="0"
+        fill-input
+        :options="groups"
+        @filter="filterFn"
+        hint="rule group"
+        label="rule group"
+        option-value="id"
+        option-label="name"
+      />
     </q-card-section>
     <q-card-section class="sectionToTheRight">
       <q-btn icon="add" @click="handleCreateRule" />
@@ -76,6 +87,4 @@ onMounted(async () => {
   </q-card>
 </template>
 
-<style scoped>
-
-</style>
+<style scoped></style>

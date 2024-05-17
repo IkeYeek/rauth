@@ -32,7 +32,10 @@ export const useRulesStore = defineStore("rules", () => {
   };
 
   const removeDomainRule = async (rule_id: number): Promise<void> => {
-    return await ApiService.makeAuthenticatedApiRequest<void>("delete", `api/rules/domain/${rule_id}`);
+    return await ApiService.makeAuthenticatedApiRequest<void>(
+      "delete",
+      `api/rules/domain/${rule_id}`,
+    );
   };
 
   const domainRulesForDomain = async (domain: string): Promise<Array<DomainRule>> => {

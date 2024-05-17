@@ -157,7 +157,8 @@ onMounted(async () => {
       row-key="id"
       virtual-scroll
       :pagination="urlRulesPagination"
-      :rows-per-page-options="[0]">
+      :rows-per-page-options="[0]"
+    >
       <template #bottom>
         <q-tr>
           <q-td colspan="100%">
@@ -193,7 +194,8 @@ onMounted(async () => {
       row-key="id"
       virtual-scroll
       :pagination="domainRulesPagination"
-      :rows-per-page-options="[0]">
+      :rows-per-page-options="[0]"
+    >
       <template #bottom>
         <q-tr>
           <q-td colspan="100%">
@@ -240,5 +242,4 @@ onMounted(async () => {
   display: flex;
   justify-content: flex-end;
 }
-
 </style>

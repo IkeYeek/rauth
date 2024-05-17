@@ -19,12 +19,12 @@ export type UpdateUserPayload = {
 export type Role = {
   id: number;
   role: string;
-}
+};
 export type UserDataResponsePayload = {
   user: User;
   role: Role;
   groups: Array<Group>;
-}
+};
 export const useUserStore = defineStore("user", () => {
   const groupStore = useGroupStore();
   const create = async (to_create: NewUser): Promise<User> => {
@@ -81,7 +81,10 @@ export const useUserStore = defineStore("user", () => {
   };
 
   const getUserData = async (): Promise<UserDataResponsePayload> => {
-    return await ApiService.makeAuthenticatedApiRequest<UserDataResponsePayload>("get", "api/users/me");
+    return await ApiService.makeAuthenticatedApiRequest<UserDataResponsePayload>(
+      "get",
+      "api/users/me",
+    );
   };
 
   return {

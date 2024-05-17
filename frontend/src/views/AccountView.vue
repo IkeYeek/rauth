@@ -13,19 +13,14 @@ console.log(userData);
 
 <template>
   <q-card dark>
-    <q-card-section>
-      My Account
-    </q-card-section>
+    <q-card-section> My Account </q-card-section>
     <q-card-section>
       <q-input v-model="newLogin" label="Login" dark disable />
     </q-card-section>
     <q-card-section>
       <q-input v-model="newPassword" label="Password" dark />
     </q-card-section>
-    
   </q-card>
 </template>
 
-<style scoped>
-
-</style>
+<style scoped></style>

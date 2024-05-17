@@ -10,7 +10,6 @@ export const useAuthStore = defineStore("auth", () => {
   const authed = ref(false);
   const isSuper = ref(false);
 
-
   const isAuth = async (): Promise<boolean> => {
     try {
       const { status } = await axios.get(`${envStore.app_base}auth`, {

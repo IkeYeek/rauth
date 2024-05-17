@@ -7,9 +7,8 @@ enum AuthState {
   NOT_TRIED,
   TRYING,
   FAILED,
-  DONE
+  DONE,
 }
-
 
 const login = ref("");
 const password = ref("");
@@ -20,7 +19,7 @@ const authState = ref<AuthState>(AuthState.NOT_TRIED);
 const waitForAuth = (e: Event, iterations = 5) => {
   setTimeout(async () => {
     authState.value = AuthState.TRYING;
-    if (!await authStore.isAuth()) {
+    if (!(await authStore.isAuth())) {
       if (iterations > 0) waitForAuth(e, iterations - 1);
       else {
         authState.value = AuthState.FAILED;
@@ -35,10 +34,16 @@ const waitForAuth = (e: Event, iterations = 5) => {
 <template>
   <div id="parent">
     <img src="https://ike.icu/assets/logo-mT7adExh.png" alt="logo" id="logo" />
-    <form id="form" action="http://localhost.dummy:8080/auth" method="post" target="_blank" @submit="waitForAuth">
+    <form
+      id="form"
+      action="http://localhost.dummy:8080/auth"
+      method="post"
+      target="_blank"
+      @submit="waitForAuth"
+    >
       <template v-if="authState === AuthState.TRYING">loading...</template>
       <template v-else-if="authStore.authed"
-      ><p>Already authenticated</p>
+        ><p>Already authenticated</p>
         <button @click="authStore.logOut()" type="button">logout</button>
       </template>
       <template v-else>
