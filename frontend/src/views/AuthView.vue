@@ -10,44 +10,25 @@ const login = ref("");
 const password = ref("");
 
 const authStore = useAuthStore();
-const route = useRoute();
-const tryAuth = async (e: MouseEvent) => {
-  e.preventDefault();
-  error.value = undefined;
-  if (login.value.length < 3) {
-    error.value = "missing login";
-  }
-  if (password.value.length < 3) {
-    error.value =
-      error.value === undefined ? "missing password" : `${error.value} + missing password`;
-  }
-  if (error.value !== undefined) return;
-  loading.value = true;
-  try {
-    await authStore.tryAuth(login.value, password.value);
-    login.value = "";
-    let origin = route.query.origin;
-    if (typeof origin === "string" && origin.startsWith("http")) {
-      // ???
-      window.location.href = origin;
+
+const waitForAuth = (e: MouseEvent, iterations = 5) => {
+  setTimeout(async () => {
+    if (!await authStore.isAuth()) {
+      if (iterations > 0) waitForAuth(e, iterations - 1);
+      else throw new Error("auth timeout");
     }
-  } catch (e) {
-    error.value = e as unknown as string;
-  } finally {
-    loading.value = false;
-    password.value = "";
-  }
+  }, 250);
 };
 </script>
 
 <template>
   <div id="parent">
     <img src="https://ike.icu/assets/logo-mT7adExh.png" alt="logo" id="logo" />
-    <form id="form" action="http://localhost.dummy:8080/auth" method="post">
+    <form id="form" action="http://localhost.dummy:8080/auth" method="post" target="_blank" @click="waitForAuth">
       <template v-if="loading"> loading...</template>
       <template v-else-if="authStore.authed"
       ><p>Already authenticated</p>
-        <button @click="authStore.logOut()">logout</button>
+        <button @click="authStore.logOut()" type="button">logout</button>
       </template>
       <template v-else>
         <p class="error" v-if="error !== undefined">{{ error }}</p>

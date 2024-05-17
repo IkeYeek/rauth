@@ -5,43 +5,10 @@ import { BadCreditentials } from "@/errors/auth_errors";
 import { ApiError } from "@/errors/api_errors";
 import { ref } from "vue";
 
-type AuthResponse = {
-  jwt: string;
-};
 export const useAuthStore = defineStore("auth", () => {
   const envStore = useEnvStore();
-  const api_base = useEnvStore().app_base;
   const authed = ref(false);
-  /*const getToken = (): string | null => {
-    return localStorage.getItem("jwt");
-  };
 
-  const setToken = (token: string) => {
-    localStorage.setItem("jwt", token);
-  };*/
-
-  const tryAuth = async (login: string, password: string): Promise<void> => {
-    try {
-      const { status, data } = await axios.post<AuthResponse>(
-        `${api_base}auth`,
-        {
-          login,
-          password,
-        },
-        {
-          validateStatus: (s) => s < 500,
-        },
-      );
-      if (status === 200) {
-        authed.value = true;
-        return;
-      }
-    } catch (e) {
-      console.error(e);
-      throw new ApiError();
-    }
-    throw new BadCreditentials();
-  };
 
   const isAuth = async (): Promise<boolean> => {
     try {
@@ -64,11 +31,11 @@ export const useAuthStore = defineStore("auth", () => {
   };
 
   const logOut = (): void => {
-    authed.value = false;
+    window.open(`${envStore.app_base}auth/logout`, "_blank");
+    window.location.reload();
   };
 
   return {
-    tryAuth,
     isAuth,
     logOut,
     authed,

@@ -2,7 +2,7 @@ use crate::routes::user_routes::get_user_data;
 use crate::middlewares::authentication_middleware::RequireAuth;
 use crate::middlewares::super_user::RequireSuperUser;
 use crate::middlewares::target_user_or_super_user_middleware::TargetUserOrSuperUser;
-use crate::routes::auth_routes::{auth, has_access, is_auth};
+use crate::routes::auth_routes::{auth, has_access, is_auth, logout};
 use crate::routes::group_routes::{
     add_user_to_group, all_groups, create_group, delete_group, delete_user_from_group,
     list_users_from_group, one_group, update_group,
@@ -85,7 +85,7 @@ async fn main() -> std::io::Result<()> {
                             .route(web::get().to(is_auth).wrap(RequireAuth))
                             .route(web::post().to(auth)),
                     )
-
+                    .service(web::resource("/logout/").route(web::get().to(logout)))
                     .service(web::resource("/has_access/").route(web::get().to(has_access))),
             )
             .service(

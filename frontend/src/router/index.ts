@@ -43,7 +43,7 @@ const router = createRouter({
         if (from.meta.requiresAuth) {
           return next("/");
         }
-        location.reload();
+        //location.reload();
       },
     },
   ],

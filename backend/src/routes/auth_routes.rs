@@ -22,6 +22,19 @@ pub(crate) struct AuthPayload {
 struct AuthResponse {
     jwt: String,
 }
+
+#[inline(always)]
+fn add_close_window_js_script_to_response() -> String {
+    r#"
+    you can now close this window.
+    <script>
+    window.close();
+    </script>
+    "#
+    .to_string()
+
+}
+
 pub(crate) async fn auth(
     db: web::Data<StorageState>,
     payload: web::Form<AuthPayload>,
@@ -36,7 +49,7 @@ pub(crate) async fn auth(
     .domain(".localhost.dummy")
     .max_age(Duration::weeks(1))
     .finish();
-    let mut response = HttpResponse::Ok().json(AuthResponse { jwt: new_jwt.token.clone() });
+    let mut response = HttpResponse::Ok().insert_header(actix_web::http::header::ContentType::html()).body(format!("logged in. {}", add_close_window_js_script_to_response()));
     match response.add_cookie(&jwt_cookie) {
         Ok(()) => Ok(response),
         Err(e) => {
@@ -44,6 +57,31 @@ pub(crate) async fn auth(
             Err(ApiError::Internal)
         }
     }
+}
+
+pub(crate) async fn logout(db: web::Data<StorageState>, req: HttpRequest, key_set: web::Data<KeySet>) -> Result<HttpResponse, ApiError> {
+    let mut db = try_get_connection(&db)?;
+    let Some(jwt) = req.cookie("jwt") else {
+        return Err(ApiError::Jwt);
+    };
+    let claims = match JWTInternal::validate_jwt(&mut db, jwt.value(), &key_set.decoding) {
+        Ok(claims) => claims,
+        Err(e) => {
+            error!("{e:?}");
+            return Err(ApiError::Internal);
+        }
+    };
+    match JWTInternal::delete(&mut db, &claims.jti) {
+        Ok(()) => (),
+        Err(e) => {
+            error!("{e:?}");
+            return Err(ApiError::Internal);
+        }
+    }
+
+    let mut response = HttpResponse::Ok().insert_header(actix_web::http::header::ContentType::html()).body(format!("logged out.{}", add_close_window_js_script_to_response()));
+    response.del_cookie("jwt");
+    Ok(response)
 }
 
 #[derive(Serialize, Deserialize)]
@@ -79,6 +117,8 @@ pub(crate) async fn has_access(
         }
     }
 }
+
+
 
 pub(crate) async fn is_auth() -> Result<&'static str, ApiError> {
     Ok("authed")
