@@ -1,14 +1,14 @@
 use crate::api_error::ApiError;
 use crate::helpers::try_get_connection;
-use crate::models::group_model::{Groups};
+use crate::models::group_model::Groups;
 use crate::models::group_user_model::GroupUser;
-use crate::models::jwt_model::{JWTInternal};
+use crate::models::jwt_model::JWTInternal;
 use crate::models::role_model::Role;
 use crate::models::user_model::User;
 use crate::{KeySet, StorageState};
-use actix_web::{web, HttpRequest, HttpResponse};
-use actix_web::cookie::Cookie;
 use actix_web::cookie::time::Duration;
+use actix_web::cookie::Cookie;
+use actix_web::{web, HttpRequest, HttpResponse};
 use log::{error, info};
 use serde::{Deserialize, Serialize};
 use url::Url;
@@ -32,7 +32,6 @@ fn add_close_window_js_script_to_response() -> String {
     </script>
     "
     .to_string()
-
 }
 
 pub(crate) async fn auth(
@@ -46,10 +45,15 @@ pub(crate) async fn auth(
     JWTInternal::register(&mut db, &new_jwt)?;
     let jwt_cookie = Cookie::build("jwt", &new_jwt.token)
         .path("/")
-    .domain(".localhost.dummy")
-    .max_age(Duration::weeks(1))
-    .finish();
-    let mut response = HttpResponse::Ok().insert_header(actix_web::http::header::ContentType::html()).body(format!("logged in. {}", add_close_window_js_script_to_response()));
+        .domain(".localhost.dummy")
+        .max_age(Duration::weeks(1))
+        .finish();
+    let mut response = HttpResponse::Ok()
+        .insert_header(actix_web::http::header::ContentType::html())
+        .body(format!(
+            "logged in. {}",
+            add_close_window_js_script_to_response()
+        ));
     match response.add_cookie(&jwt_cookie) {
         Ok(()) => Ok(response),
         Err(e) => {
@@ -59,7 +63,11 @@ pub(crate) async fn auth(
     }
 }
 
-pub(crate) async fn logout(db: web::Data<StorageState>, req: HttpRequest, key_set: web::Data<KeySet>) -> Result<HttpResponse, ApiError> {
+pub(crate) async fn logout(
+    db: web::Data<StorageState>,
+    req: HttpRequest,
+    key_set: web::Data<KeySet>,
+) -> Result<HttpResponse, ApiError> {
     let mut db = try_get_connection(&db)?;
     let Some(jwt) = req.cookie("jwt") else {
         return Err(ApiError::Jwt);
@@ -79,7 +87,12 @@ pub(crate) async fn logout(db: web::Data<StorageState>, req: HttpRequest, key_se
         }
     }
 
-    let mut response = HttpResponse::Ok().insert_header(actix_web::http::header::ContentType::html()).body(format!("logged out.{}", add_close_window_js_script_to_response()));
+    let mut response = HttpResponse::Ok()
+        .insert_header(actix_web::http::header::ContentType::html())
+        .body(format!(
+            "logged out.{}",
+            add_close_window_js_script_to_response()
+        ));
     response.del_cookie("jwt");
     Ok(response)
 }
@@ -117,8 +130,6 @@ pub(crate) async fn has_access(
         }
     }
 }
-
-
 
 pub(crate) async fn is_auth() -> Result<&'static str, ApiError> {
     Ok("authed")

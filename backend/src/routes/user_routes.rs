@@ -7,7 +7,7 @@ use crate::models::role_model::Role;
 use crate::models::role_user_model::RoleUser;
 use crate::models::user_model::{NewUser, SafeUser, User};
 use crate::StorageState;
-use actix_web::{HttpMessage, HttpRequest, web};
+use actix_web::{web, HttpMessage, HttpRequest};
 use log::error;
 use serde::{Deserialize, Serialize};
 

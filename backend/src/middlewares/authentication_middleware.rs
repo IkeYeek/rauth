@@ -2,6 +2,8 @@ use crate::api_error::ApiError;
 use crate::helpers::try_get_connection;
 use crate::models::jwt_model::{Claims, JWTInternal};
 use crate::{KeySet, StorageState};
+use actix_web::cookie::time::Duration;
+use actix_web::cookie::Cookie;
 use actix_web::dev::{Service, ServiceRequest, ServiceResponse, Transform};
 use actix_web::{web, HttpMessage};
 use futures::future::LocalBoxFuture;
@@ -10,8 +12,6 @@ use log::error;
 use std::future::{ready, Ready};
 use std::rc::Rc;
 use std::task::{Context, Poll};
-use actix_web::cookie::Cookie;
-use actix_web::cookie::time::Duration;
 
 pub struct AuthenticationMiddleware<S> {
     service: Rc<S>,
@@ -108,7 +108,6 @@ where
             Err(e) => return Box::pin(ready(Err(actix_web::Error::from(e)))),
         };
         drop(db);
-        
 
         let srv = Rc::clone(&self.service);
         async move {
