@@ -1,12 +1,12 @@
 use crate::api_error::ApiError;
 use crate::helpers::try_get_connection;
-use crate::models::group_model::{Group, Groups};
+use crate::models::group_model::{Groups};
 use crate::models::group_user_model::GroupUser;
-use crate::models::jwt_model::{Claims, JWTInternal};
+use crate::models::jwt_model::{JWTInternal};
 use crate::models::role_model::Role;
 use crate::models::user_model::User;
 use crate::{KeySet, StorageState};
-use actix_web::{web, HttpMessage, HttpRequest, HttpResponse};
+use actix_web::{web, HttpRequest, HttpResponse};
 use actix_web::cookie::Cookie;
 use actix_web::cookie::time::Duration;
 use log::{error, info};
@@ -23,14 +23,14 @@ struct AuthResponse {
     jwt: String,
 }
 
-#[inline(always)]
+#[inline]
 fn add_close_window_js_script_to_response() -> String {
-    r#"
+    "
     you can now close this window.
     <script>
     window.close();
     </script>
-    "#
+    "
     .to_string()
 
 }

@@ -1,7 +1,6 @@
 use actix_web::http::header::ContentType;
 use actix_web::http::StatusCode;
 use actix_web::{HttpResponse, ResponseError};
-use actix_web::web::Header;
 use derive_more::{Display, Error};
 
 #[derive(Debug, Display, Error)]

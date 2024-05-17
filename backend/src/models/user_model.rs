@@ -1,4 +1,3 @@
-use actix_web::{HttpRequest, web};
 use crate::api_error::ApiError;
 use crate::models::group_model::Group;
 use crate::models::group_user_model::GroupUser;
@@ -16,7 +15,6 @@ use diesel::{
 };
 use log::error;
 use serde::{Deserialize, Serialize};
-use crate::models::jwt_model::Claims;
 
 #[derive(
     Identifiable,
@@ -177,7 +175,7 @@ impl User {
 }
 impl From<User> for SafeUser {
     fn from(unsafe_user: User) -> Self {
-        return Self {
+        Self {
             id: unsafe_user.id,
             login: unsafe_user.login.clone(),
         }
