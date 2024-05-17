@@ -86,7 +86,8 @@ async fn main() -> std::io::Result<()> {
                             .route(web::post().to(auth)),
                     )
                     .service(web::resource("/logout/").route(web::get().to(logout)))
-                    .service(web::resource("/has_access/").route(web::get().to(has_access))),
+                    .service(web::resource("/has_access/").route(web::get().to(has_access)))
+                    .service(web::resource("/is_super/").wrap(RequireSuperUser).route(web::get().to(has_access))),
             )
             .service(
                 web::scope("/api")

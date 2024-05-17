@@ -13,15 +13,17 @@ const authStore = useAuthStore();
         <li>
           <RouterLink to="/">Home</RouterLink>
         </li>
-        <li>
-          <RouterLink to="/users">Users</RouterLink>
-        </li>
-        <li>
-          <RouterLink to="/groups">Groups</RouterLink>
-        </li>
-        <li>
-          <RouterLink to="/rules">Rules</RouterLink>
-        </li>
+        <template v-if="authStore.isSuper">
+          <li>
+            <RouterLink to="/users">Users</RouterLink>
+          </li>
+          <li>
+            <RouterLink to="/groups">Groups</RouterLink>
+          </li>
+          <li>
+            <RouterLink to="/rules">Rules</RouterLink>
+          </li>
+        </template>
       </ul>
       <ul>
         <li>

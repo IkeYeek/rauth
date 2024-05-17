@@ -8,6 +8,7 @@ import { ref } from "vue";
 export const useAuthStore = defineStore("auth", () => {
   const envStore = useEnvStore();
   const authed = ref(false);
+  const isSuper = ref(false);
 
 
   const isAuth = async (): Promise<boolean> => {
@@ -20,6 +21,7 @@ export const useAuthStore = defineStore("auth", () => {
         validateStatus: (s) => s < 500,
       });
       authed.value = status === 200;
+      await checkIsSuper();
       return status === 200;
     } catch (e) {
       console.error(e);
@@ -30,6 +32,19 @@ export const useAuthStore = defineStore("auth", () => {
     }
   };
 
+  const checkIsSuper = async (): Promise<boolean> => {
+    try {
+      const { status } = await axios.get(`${envStore.app_base}auth/super`, {
+        withCredentials: true,
+        validateStatus: (s) => s < 500,
+      });
+      return status === 200;
+    } catch (e) {
+      console.log(e);
+      return false;
+    }
+  };
+
   const logOut = (): void => {
     window.open(`${envStore.app_base}auth/logout`, "_blank");
     window.location.reload();
@@ -37,6 +52,7 @@ export const useAuthStore = defineStore("auth", () => {
 
   return {
     isAuth,
+    isSuper,
     logOut,
     authed,
   };
