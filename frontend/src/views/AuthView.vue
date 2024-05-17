@@ -3,19 +3,30 @@ import { ref } from "vue";
 import { useAuthStore } from "@/stores/auth_store";
 import { useRoute, useRouter } from "vue-router";
 
-const loading = ref(false);
-const error = ref<string | undefined>(undefined);
+enum AuthState {
+  NOT_TRIED,
+  TRYING,
+  FAILED,
+  DONE
+}
+
 
 const login = ref("");
 const password = ref("");
 
 const authStore = useAuthStore();
 
-const waitForAuth = (e: MouseEvent, iterations = 5) => {
+const authState = ref<AuthState>(AuthState.NOT_TRIED);
+const waitForAuth = (e: Event, iterations = 5) => {
   setTimeout(async () => {
+    authState.value = AuthState.TRYING;
     if (!await authStore.isAuth()) {
       if (iterations > 0) waitForAuth(e, iterations - 1);
-      else throw new Error("auth timeout");
+      else {
+        authState.value = AuthState.FAILED;
+      }
+    } else {
+      authState.value = AuthState.DONE;
     }
   }, 250);
 };
@@ -24,14 +35,14 @@ const waitForAuth = (e: MouseEvent, iterations = 5) => {
 <template>
   <div id="parent">
     <img src="https://ike.icu/assets/logo-mT7adExh.png" alt="logo" id="logo" />
-    <form id="form" action="http://localhost.dummy:8080/auth" method="post" target="_blank" @click="waitForAuth">
-      <template v-if="loading"> loading...</template>
+    <form id="form" action="http://localhost.dummy:8080/auth" method="post" target="_blank" @submit="waitForAuth">
+      <template v-if="authState === AuthState.TRYING">loading...</template>
       <template v-else-if="authStore.authed"
       ><p>Already authenticated</p>
         <button @click="authStore.logOut()" type="button">logout</button>
       </template>
       <template v-else>
-        <p class="error" v-if="error !== undefined">{{ error }}</p>
+        <p class="error" v-if="authState === AuthState.FAILED">Couldn't authenticate</p>
         <label for="login">login: </label>
         <input type="text" name="login" placeholder="login" id="login" v-model="login" />
         <label for="password">Password: </label>
